@@ -1,0 +1,108 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary: 139, 92, 246;
+  --color-secondary: 13, 148, 136;
+  --color-accent: 236, 72, 153;
+  --color-success: 34, 197, 94;
+  --color-warning: 234, 179, 8;
+  --color-error: 239, 68, 68;
+}
+
+@layer base {
+  html {
+    font-family: 'Poppins', sans-serif;
+    /* Disable text selection globally for touch devices */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    /* Disable touch callouts on iOS */
+    -webkit-touch-callout: none;
+    /* Disable tap highlighting */
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  body {
+    @apply bg-gray-900 text-white;
+    /* Prevent overscroll bounce on mobile */
+    overscroll-behavior: none;
+    /* Disable pull-to-refresh */
+    overscroll-behavior-y: contain;
+    /* Ensure scrolling works in kiosk mode */
+    height: 100vh;
+    overflow-y: auto;
+  }
+  
+  /* Allow text selection only for input fields */
+  input, textarea {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-6 py-3 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-opacity-50;
+  }
+  
+  .btn-primary {
+    @apply bg-primary text-white focus:ring-primary/50 hover:bg-primary/90;
+  }
+  
+  .btn-secondary {
+    @apply bg-secondary text-white focus:ring-secondary/50 hover:bg-secondary/90;
+  }
+  
+  .btn-accent {
+    @apply bg-accent text-white focus:ring-accent/50 hover:bg-accent/90;
+  }
+
+  .btn-outline {
+    @apply border-2 bg-transparent hover:bg-white/10;
+  }
+  
+  .btn-lg {
+    @apply px-8 py-4 text-lg;
+  }
+
+  .input {
+    @apply bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors duration-200;
+  }
+
+  .card {
+    @apply bg-gray-800 rounded-xl shadow-lg p-6;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.5s ease-in-out;
+  }
+
+  .animate-pulse-light {
+    animation: pulseLight 2s infinite;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes pulseLight {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
