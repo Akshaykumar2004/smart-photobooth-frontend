@@ -82,6 +82,35 @@ const PhotoBoothApp: React.FC = () => {
 };
 
 function App() {
+  // Add error boundary
+  const [hasError, setHasError] = React.useState(false);
+  
+  React.useEffect(() => {
+    const handleError = (error: ErrorEvent) => {
+      console.error('App error:', error);
+      setHasError(true);
+    };
+    
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
+  }, []);
+  
+  if (hasError) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-center text-white">
+          <h1 className="text-2xl font-bold mb-4">Something went wrong</h1>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="bg-primary px-4 py-2 rounded"
+          >
+            Reload App
+          </button>
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <PhotoBoothProvider>
       <PhotoBoothApp />

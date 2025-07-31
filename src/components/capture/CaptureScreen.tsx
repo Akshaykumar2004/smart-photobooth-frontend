@@ -183,7 +183,7 @@ const CaptureScreen: React.FC = () => {
           )}
           
           {showCountdown && (
-            <Countdown seconds={2} onComplete={onCountdownComplete} />
+            <Countdown seconds={3} onComplete={onCountdownComplete} />
           )}
           
           <div className="relative aspect-[4/3] bg-black rounded-lg overflow-hidden">
@@ -251,9 +251,9 @@ const CaptureScreen: React.FC = () => {
                 variant="primary" 
                 size="lg" 
                 icon={Camera}
+                className={photos.length >= maxPhotos ? 'opacity-50 cursor-not-allowed' : 'btn-ultra-neon'}
                 onClick={handleStartCapture}
                 disabled={photos.length >= maxPhotos}
-                className={photos.length >= maxPhotos ? 'opacity-50 cursor-not-allowed' : ''}
               >
                 {photos.length >= maxPhotos ? 'All Photos Captured!' : 'Start Continuous Capture'}
               </Button>

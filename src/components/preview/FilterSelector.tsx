@@ -10,9 +10,8 @@ const samplePhotoUrl = "https://images.pexels.com/photos/1036623/pexels-photo-10
 
 const filters = [
   { name: 'normal', label: 'Original' },
-  { name: 'grayscale', label: 'B&W' },
-  { name: 'sepia', label: 'Sepia' },
-  { name: 'saturate', label: 'Vibrant' }
+  { name: 'grayscale', label: 'Black & White' },
+  { name: 'sepia', label: 'Vintage' }
 ];
 
 const FilterSelector: React.FC<FilterSelectorProps> = ({ currentFilter, onFilterChange }) => {

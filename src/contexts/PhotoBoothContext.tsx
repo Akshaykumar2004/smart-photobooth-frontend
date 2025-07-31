@@ -17,6 +17,9 @@ export type UserInfoType = {
 export type SettingsType = {
   ghibliConversionLimit: number;
   ghibliConversionsUsed: number;
+  pricing?: {
+    [key: string]: number;
+  };
 };
 
 type StageType = 'welcome' | 'payment' | 'capture' | 'preview' | 'delivery';
@@ -89,7 +92,7 @@ export const PhotoBoothProvider: React.FC<{ children: ReactNode }> = ({ children
   };
 
   const removePhoto = (index: number) => {
-    setPhotos(photos.filter((_, i) => i !== index));
+    setPhotos(prevPhotos => prevPhotos.filter((_, i) => i !== index));
   };
 
   const updatePhoto = (index: number, photo: PhotoType) => {

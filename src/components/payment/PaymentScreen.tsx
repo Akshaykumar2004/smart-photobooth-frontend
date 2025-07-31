@@ -12,49 +12,29 @@ const PaymentScreen: React.FC = () => {
     userInfo, 
     setUserInfo, 
     setSessionPaid, 
-    backendConnected,
-    settings
+    backendConnected
   } = usePhotoBooth();
   
-  const [showPaymentUI, setShowPaymentUI] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<'basic' | 'ghibli'>('basic');
   const [copies, setCopies] = useState(2);
   
   const handleContinue = () => {
-    // Update user info with selected package
+    // Update user info and proceed directly
     setUserInfo({
       ...userInfo,
       copies,
       packageType: selectedPackage
     });
-    setShowPaymentUI(true);
-  };
-  
-  const handlePaymentComplete = () => {
     setSessionPaid(true);
     setStage('capture');
   };
   
   const steps = ['Welcome', 'Payment', 'Capture', 'Preview', 'Delivery'];
   
-  // Pricing calculation based on new structure
-  const getBasicPrice = (numCopies: number) => {
-    switch (numCopies) {
-      case 2: return 199;
-      case 4: return 299;
-      case 6: return 399;
-      case 8: return 499;
-      case 10: return 599;
-      default: return 199;
-    }
-  };
-  
-  const getGhibliPrice = (numCopies: number) => {
-    const basicPrice = getBasicPrice(numCopies);
-    return basicPrice + 50; // Add 50 for Ghibli package
-  };
-  
-  const totalPrice = selectedPackage === 'basic' ? getBasicPrice(copies) : getGhibliPrice(copies);
+  // Simple pricing
+  const basicPrice = copies === 2 ? 199 : 299;
+  const ghibliPrice = copies === 2 ? 249 : 349;
+  const totalPrice = selectedPackage === 'basic' ? basicPrice : ghibliPrice;
   
   return (
     <div className="min-h-screen flex flex-col items-center p-4 animate-fade-in overflow-y-auto">
@@ -70,193 +50,83 @@ const PaymentScreen: React.FC = () => {
           Back to Welcome
         </Button>
         
-        {!showPaymentUI ? (
-          <div className="space-y-4">
-            {/* Package Selection */}
-            <Card animate className="w-full">
-              <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                <ImageIcon className="text-primary" />
-                Choose Your Package
-              </h3>
-              
-              {/* Basic Package */}
+        <div className="space-y-6">
+          {/* Package Selection - Two Big Boxes */}
+          <Card animate className="w-full">
+            <h2 className="text-3xl font-bold mb-8 text-center">Choose Your Package</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              {/* Normal Package */}
               <div 
-                className={`p-4 rounded-lg border-2 cursor-pointer transition-all mb-4 ${
+                className={`p-8 rounded-xl border-4 cursor-pointer transition-all text-center ${
                   selectedPackage === 'basic' 
-                    ? 'border-primary bg-primary/10' 
-                    : 'border-gray-700 hover:border-gray-600'
+                    ? 'border-primary bg-primary/20 shadow-lg shadow-primary/30' 
+                    : 'border-gray-600 hover:border-gray-500 bg-gray-800/50'
                 }`}
                 onClick={() => setSelectedPackage('basic')}
               >
-                <div className="flex justify-between items-center mb-3">
-                  <h4 className="text-lg font-bold flex items-center gap-2">
-                    <Printer className="text-secondary" />
-                    Original Photos Package
-                  </h4>
-                  <span className="text-xl font-bold text-primary">₹{getBasicPrice(copies)}</span>
-                </div>
-                
-                <div className="space-y-2 text-gray-300 text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 bg-primary rounded-full"></span>
-                    <span>{copies} × Photo strips (4x6 inch each)</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 bg-primary rounded-full"></span>
-                    <span>Professional 2x6 layout with your 4 photos</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 bg-primary rounded-full"></span>
-                    <span>High-quality photo paper printing</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 bg-primary rounded-full"></span>
-                    <span>Original photos only</span>
-                  </div>
-                </div>
+                <div className="text-6xl mb-4">📸</div>
+                <h3 className="text-2xl font-bold mb-4">Normal</h3>
+                <div className="text-3xl font-bold text-primary mb-4">₹{basicPrice}</div>
+                <p className="text-gray-300">Original photos with filters</p>
               </div>
               
-              {/* Ghibli Package */}
+              {/* Normal + Ghibli Package */}
               <div 
-                className={`p-4 rounded-lg border-2 cursor-pointer transition-all mb-4 ${
+                className={`p-8 rounded-xl border-4 cursor-pointer transition-all text-center ${
                   selectedPackage === 'ghibli' 
-                    ? 'border-purple-500 bg-purple-500/10' 
-                    : 'border-gray-700 hover:border-gray-600'
+                    ? 'border-purple-500 bg-purple-500/20 shadow-lg shadow-purple-500/30' 
+                    : 'border-gray-600 hover:border-gray-500 bg-gray-800/50'
                 }`}
                 onClick={() => setSelectedPackage('ghibli')}
               >
-                <div className="flex justify-between items-center mb-3">
-                  <h4 className="text-lg font-bold flex items-center gap-2">
-                    <Sparkles className="text-purple-400" />
-                    Original + 2 Ghibli Conversions
-                  </h4>
-                  <span className="text-xl font-bold text-purple-400">₹{getGhibliPrice(copies)}</span>
-                </div>
-                
-                <div className="space-y-2 text-gray-300 text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
-                    <span>{copies} × Photo strips (4x6 inch each)</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
-                    <span>Professional 2x6 layout with your 4 photos</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
-                    <span>High-quality photo paper printing</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
-                    <span>2 FREE Ghibli-style AI conversions</span>
-                  </div>
-                </div>
+                <div className="text-6xl mb-4">✨</div>
+                <h3 className="text-2xl font-bold mb-4">Normal + Ghibli</h3>
+                <div className="text-3xl font-bold text-purple-400 mb-4">₹{ghibliPrice}</div>
+                <p className="text-gray-300">Original + 2 Ghibli AI conversions</p>
               </div>
-            </Card>
+            </div>
             
-            {/* Number of Copies */}
-            <Card animate className="w-full">
-              <h3 className="text-lg font-bold mb-4">Number of Copies</h3>
-              
-              <div className="grid grid-cols-5 gap-2 mb-4">
-                {[2, 4, 6, 8, 10].map((copyCount) => (
-                  <Button
-                    key={copyCount}
-                    variant={copies === copyCount ? 'primary' : 'outline'}
-                    onClick={() => setCopies(copyCount)}
-                    className="text-center"
-                  >
-                    {copyCount}
-                  </Button>
-                ))}
+            {/* Copies Selection */}
+            <div className="text-center mb-8">
+              <h3 className="text-2xl font-bold mb-6">Choose Copies</h3>
+              <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
+                <Button
+                  variant={copies === 2 ? 'primary' : 'outline'}
+                  onClick={() => setCopies(2)}
+                  className="text-xl py-6"
+                  size="lg"
+                >
+                  2 Copies
+                </Button>
+                <Button
+                  variant={copies === 4 ? 'primary' : 'outline'}
+                  onClick={() => setCopies(4)}
+                  className="text-xl py-6"
+                  size="lg"
+                >
+                  4 Copies
+                </Button>
               </div>
-              
-              <div className="bg-gray-800 rounded-lg p-3 text-sm">
-                <h4 className="font-medium mb-2">Pricing for {copies} copies:</h4>
-                <div className="space-y-1 text-gray-300">
-                  <div className="flex justify-between">
-                    <span>Original Photos Package:</span>
-                    <span className="font-medium">₹{getBasicPrice(copies)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Original + 2 Ghibli Package:</span>
-                    <span className="font-medium">₹{getGhibliPrice(copies)}</span>
-                  </div>
-                </div>
-              </div>
-            </Card>
+            </div>
             
-            {/* Order Summary */}
-            <Card animate className="w-full">
-              <h3 className="text-lg font-bold mb-4">Order Summary</h3>
-              
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-300">
-                    {selectedPackage === 'basic' ? 'Original Photos Package' : 'Original + 2 Ghibli Package'}
-                  </span>
-                  <span className="font-medium flex items-center">
-                    <IndianRupee size={16} className="inline mr-1" /> {totalPrice}
-                  </span>
-                </div>
-                
-                <div className="text-sm text-gray-400">
-                  <p>• {copies} × 4x6 inch photo strips</p>
-                  <p>• 2x6 layout (2 columns × 2 rows)</p>
-                  <p>• Professional photo paper</p>
-                  {selectedPackage === 'ghibli' && (
-                    <p>• 2 Ghibli AI conversions included</p>
-                  )}
-                </div>
-                
-                <hr className="border-gray-700" />
-                
-                <div className="flex justify-between items-center text-lg font-bold">
-                  <span>Total</span>
-                  <span className="flex items-center text-primary">
-                    <IndianRupee size={20} className="inline mr-1" /> {totalPrice}
-                  </span>
-                </div>
-              </div>
-              
-              {/* Backend Status */}
-              <div className={`mt-4 p-3 rounded-lg border ${backendConnected ? 'bg-green-900/20 border-green-500/30' : 'bg-red-900/20 border-red-500/30'}`}>
-                <div className="flex items-center gap-2">
-                  <Server className={backendConnected ? 'text-green-400' : 'text-red-400'} size={16} />
-                  <span className={`font-medium ${backendConnected ? 'text-green-400' : 'text-red-400'}`}>
-                    Printing Service: {backendConnected ? 'Ready' : 'Offline'}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-300 mt-1">
-                  {backendConnected 
-                    ? 'FastAPI backend ready for photo strip generation and printing'
-                    : 'Backend server required for printing. Please start FastAPI server.'
-                  }
-                </p>
+            {/* Total and Continue */}
+            <div className="text-center">
+              <div className="text-4xl font-bold text-primary mb-6">
+                Total: ₹{totalPrice}
               </div>
               
               <Button 
                 variant="primary" 
-                className="w-full mt-6" 
                 size="lg"
+                className="text-xl px-12 py-4 btn-ultra-neon"
                 onClick={handleContinue}
-                disabled={!backendConnected}
               >
-                {!backendConnected 
-                  ? 'Backend Server Required for Printing' 
-                  : 'Continue to Payment'
-                }
+                Start Photo Session →
               </Button>
-            </Card>
-          </div>
-        ) : (
-          <MockPaymentUI 
-            onPaymentComplete={handlePaymentComplete} 
-            amount={totalPrice}
-            includesPrint={true}
-            copies={copies}
-          />
-        )}
+            </div>
+          </Card>
+        </div>
       </div>
     </div>
   );

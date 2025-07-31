@@ -38,9 +38,12 @@ function createWindow() {
     mainWindow.loadURL('http://localhost:5173');
     // Open DevTools in development
     mainWindow.webContents.openDevTools();
-  } else {
-    mainWindow.loadFile('dist/index.html');
+  }   else {
+    // In production, load from the built files
+    const indexPath = path.join(__dirname, '../dist/index.html');
+    mainWindow.loadFile(indexPath);
   }
+
 
   // Set up menu for desktop app
   const { Menu } = await import('electron');

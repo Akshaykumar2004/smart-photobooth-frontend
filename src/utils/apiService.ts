@@ -5,7 +5,7 @@ export class ApiService {
   
   private constructor() {
     // Default to localhost, can be configured via environment variable
-    this.baseUrl = import.meta.env.VITE_API_URL || 'http://192.168.0.192:8000';
+    this.baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
   }
   
   static getInstance(): ApiService {
@@ -42,7 +42,15 @@ export class ApiService {
         photoFiles.push(photoFiles[photoFiles.length - 1] || photos[0]);
       }
       
-      photoFiles.forEach((photo, index) => {
+      // Process photos with filters applied
+      const processedPhotos = await Promise.all(
+        photoFiles.map(async (photo) => {
+          const processedDataUrl = await this.applyFilterToDataUrl(photo.dataUrl, photo.filter);
+          return { ...photo, dataUrl: processedDataUrl };
+        })
+      );
+      
+      processedPhotos.forEach((photo, index) => {
         const file = this.dataURLToFile(photo.dataUrl, `image${index + 1}.jpg`);
         formData.append(`image${index + 1}`, file);
       });
@@ -65,6 +73,47 @@ export class ApiService {
     }
   }
 
+  // Apply CSS filter to image data URL
+  private applyFilterToDataUrl(dataUrl: string, filter: string): string {
+    return new Promise<string>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        if (!ctx) {
+          resolve(dataUrl);
+          return;
+        }
+        
+        canvas.width = img.width;
+        canvas.height = img.height;
+        
+        // Apply filter based on type
+        switch (filter) {
+          case 'grayscale':
+            ctx.filter = 'grayscale(100%)';
+            break;
+          case 'sepia':
+            ctx.filter = 'sepia(80%)';
+            break;
+          case 'ghibli':
+            ctx.filter = 'brightness(105%) contrast(110%) saturate(140%) hue-rotate(2deg) sepia(20%)';
+            break;
+          default:
+            ctx.filter = 'none';
+        }
+        
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/jpeg', 0.9));
+      };
+      img.onerror = () => {
+        console.error('Failed to load image for filter application');
+        resolve(dataUrl); // Return original if filter fails
+      };
+      img.src = dataUrl;
+    }) as any; // Type assertion to handle Promise return in sync context
+  }
   // Print photo strip using backend
   async printPhotoStrip(copies: number = 1): Promise<{ status: string; error?: string }> {
     try {

@@ -35,7 +35,7 @@ function createWindow() {
     mainWindow.webContents.openDevTools();
   } else {
     // In production, load from the built files
-    const indexPath = path.join(__dirname, '../dist/index.html');
+    const indexPath = path.join(__dirname, 'dist', 'index.html'); // Changed path
     mainWindow.loadFile(indexPath);
   }
 

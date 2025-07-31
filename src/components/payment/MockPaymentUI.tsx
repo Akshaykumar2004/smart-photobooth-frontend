@@ -1,53 +1,32 @@
 import React, { useState } from 'react';
-import { IndianRupee, QrCode, Check, Banknote, Smartphone } from 'lucide-react';
+import { IndianRupee, Check } from 'lucide-react';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
-import Input from '../ui/Input';
 
 interface MockPaymentUIProps {
   onPaymentComplete: () => void;
   amount: number;
   includesPrint: boolean;
   copies?: number;
+  onCancel?: () => void;
 }
 
 const MockPaymentUI: React.FC<MockPaymentUIProps> = ({ 
   onPaymentComplete, 
   amount, 
   includesPrint,
-  copies = 1
+  copies = 1,
+  onCancel
 }) => {
-  const [paymentMethod, setPaymentMethod] = useState<'upi' | 'cash'>('cash');
-  const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [upiQrImage, setUpiQrImage] = useState<string | null>(null);
   
-  const [upiId, setUpiId] = useState('');
-  
-  React.useEffect(() => {
-    // Load UPI QR image from localStorage
-    const savedUpiImage = localStorage.getItem('upiQrImage');
-    if (savedUpiImage) {
-      setUpiQrImage(savedUpiImage);
-    }
-  }, []);
-  
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  const handleSubmit = () => {
+    setSuccess(true);
     
-    // Simulate payment processing
-    const processingTime = paymentMethod === 'cash' ? 1000 : 1500;
-    
+    // Navigate to next step after success animation
     setTimeout(() => {
-      setLoading(false);
-      setSuccess(true);
-      
-      // Navigate to next step after success animation
-      setTimeout(() => {
-        onPaymentComplete();
-      }, 1500);
-    }, processingTime);
+      onPaymentComplete();
+    }, 1500);
   };
   
   if (success) {
@@ -60,7 +39,7 @@ const MockPaymentUI: React.FC<MockPaymentUIProps> = ({
         </div>
         <h2 className="text-2xl font-bold mb-2">Payment Successful!</h2>
         <p className="text-gray-300 mb-4">
-          Payment of <span className="font-bold text-primary">₹{amount}</span> received via {paymentMethod.toUpperCase()}
+          Payment of <span className="font-bold text-primary">₹{amount}</span> confirmed
         </p>
         <p className="text-gray-300 mb-6">
           {includesPrint 
@@ -68,160 +47,51 @@ const MockPaymentUI: React.FC<MockPaymentUIProps> = ({
             : 'Your photos are ready for download'
           }
         </p>
-        <div className="animate-pulse-light">Redirecting to delivery...</div>
+        <div className="animate-pulse-light">Redirecting...</div>
       </Card>
     );
   }
   
   return (
     <Card animate className="w-full">
-      <h2 className="text-2xl font-bold mb-6">
-        Payment
+      <h2 className="text-2xl font-bold mb-6 text-center">
+        Payment Required
       </h2>
       
-      <div className="bg-gray-900 rounded-lg p-4 mb-6">
-        <div className="flex justify-between items-center text-lg font-bold">
-          <span>Total Amount</span>
-          <span className="flex items-center text-primary">
-            <IndianRupee size={20} className="inline mr-1" /> {amount}
-          </span>
+      <div className="bg-gray-900 rounded-lg p-6 mb-6 text-center">
+        <div className="text-4xl font-bold text-primary mb-2">
+          <IndianRupee size={32} className="inline mr-2" /> {amount}
         </div>
-        {includesPrint && (
-          <p className="text-sm text-gray-400 mt-1">
+        {includesPrint && copies > 0 && (
+          <p className="text-sm text-gray-400">
             Includes physical prints ({copies} copies per photo)
           </p>
         )}
       </div>
       
-      {/* Payment Method Selection */}
-      <div className="grid grid-cols-2 gap-2 mb-6">
+      <div className="text-center">
         <Button
-          variant={paymentMethod === 'cash' ? 'primary' : 'outline'}
-          className={`flex-1 ${paymentMethod === 'cash' ? '' : 'text-white'}`}
-          onClick={() => setPaymentMethod('cash')}
-          icon={Banknote}
+          variant="primary"
+          size="lg"
+          className="w-full text-xl py-4 btn-racing"
+          onClick={handleSubmit}
         >
-          Cash
+          Pay ₹{amount} & Continue
         </Button>
-        <Button
-          variant={paymentMethod === 'upi' ? 'primary' : 'outline'}
-          className={`flex-1 ${paymentMethod === 'upi' ? '' : 'text-white'}`}
-          onClick={() => setPaymentMethod('upi')}
-          icon={Smartphone}
-        >
-          UPI
-        </Button>
+        
+        {onCancel && (
+          <Button
+            variant="outline"
+            className="w-full mt-3"
+            onClick={onCancel}
+          >
+            Cancel
+          </Button>
+        )}
       </div>
-      
-      {/* Payment Method Forms */}
-      {paymentMethod === 'cash' && (
-        <div className="text-center py-8">
-          <div className="inline-block p-6 bg-green-900/20 rounded-full mb-6">
-            <Banknote size={64} className="text-green-400" />
-          </div>
-          <h3 className="text-xl font-bold mb-4">Cash Payment</h3>
-          <p className="text-gray-300 mb-6">
-            Please pay <span className="font-bold text-primary">₹{amount}</span> in cash to the operator
-          </p>
-          <div className="bg-gray-800 rounded-lg p-4 mb-6">
-            <p className="text-sm text-gray-300">
-              💡 <strong>Instructions:</strong>
-            </p>
-            <ul className="text-sm text-gray-400 mt-2 space-y-1">
-              <li>• Hand over exact change if possible</li>
-              <li>• Wait for operator confirmation</li>
-              <li>• Keep your receipt safe</li>
-            </ul>
-          </div>
-          <Button
-            variant="primary"
-            className="w-full"
-            size="lg"
-            onClick={handleSubmit}
-            disabled={loading}
-          >
-            {loading ? (
-              <>
-                <span className="animate-spin mr-2">⟳</span>
-                Processing Cash Payment...
-              </>
-            ) : (
-              <>
-                Confirm Cash Payment of ₹{amount}
-              </>
-            )}
-          </Button>
-        </div>
-      )}
-
-      {paymentMethod === 'upi' && (
-        <div className="space-y-4">
-          <div className="text-center">
-            {upiQrImage ? (
-              <div className="inline-block mb-4">
-                <img 
-                  src={upiQrImage} 
-                  alt="UPI QR Code" 
-                  className="w-48 h-48 object-contain rounded-lg border border-gray-700"
-                />
-              </div>
-            ) : (
-              <div className="bg-white p-6 rounded-lg inline-block mb-4">
-                <QrCode size={180} className="text-gray-900" />
-              </div>
-            )}
-            <p className="text-gray-300 mb-2">Scan QR code with any UPI app</p>
-            <div className="text-xl font-bold mb-4">
-              <IndianRupee size={20} className="inline" /> {amount}.00
-            </div>
-          </div>
-          
-          <div className="text-center text-gray-400 text-sm mb-4">OR</div>
-          
-          <Input
-            label="Enter UPI ID"
-            placeholder="yourname@paytm / yourname@gpay"
-            value={upiId}
-            onChange={(e) => setUpiId(e.target.value)}
-            helperText="Enter your UPI ID to receive payment request"
-          />
-          
-          <div className="bg-gray-800 rounded-lg p-3 text-sm">
-            <p className="text-gray-300 mb-2">Popular UPI Apps:</p>
-            <div className="flex gap-2 text-xs">
-              <span className="bg-blue-600 px-2 py-1 rounded">PhonePe</span>
-              <span className="bg-green-600 px-2 py-1 rounded">Google Pay</span>
-              <span className="bg-purple-600 px-2 py-1 rounded">Paytm</span>
-              <span className="bg-orange-600 px-2 py-1 rounded">BHIM</span>
-            </div>
-          </div>
-          
-          <Button
-            variant="primary"
-            className="w-full"
-            size="lg"
-            onClick={handleSubmit}
-            disabled={loading}
-          >
-            {loading ? (
-              <>
-                <span className="animate-spin mr-2">⟳</span>
-                Verifying UPI Payment...
-              </>
-            ) : (
-              <>
-                Pay ₹{amount} via UPI
-              </>
-            )}
-          </Button>
-        </div>
-      )}
 
       <div className="mt-4 text-xs text-gray-400 text-center">
-        Secure payment processing.
-        <br />
-        {paymentMethod === 'cash' && 'Cash payments are handled by the operator.'}
-        {paymentMethod === 'upi' && 'UPI payments are processed through secure gateways.'}
+        Secure payment processing
       </div>
     </Card>
   );

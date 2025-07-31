@@ -2,6 +2,7 @@
   "name": "smart-photo-booth",
   "private": true,
   "version": "2.0.0",
+  "type": "module",
   "main": "public/electron-main.cjs",
   "homepage": "./",
   "scripts": {
@@ -24,10 +25,12 @@
     "dist:all": "npm run build && electron-builder --win --mac --linux --publish=never"
   },
   "dependencies": {
+    "a": "^3.0.1",
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-webcam": "^7.2.0"
+    "react-webcam": "^7.2.0",
+    "three": "^0.178.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
@@ -63,11 +66,13 @@
       "node_modules/**/*",
       "!node_modules/.cache"
     ],
-    "extraResources": [
+        "extraResources": [
       {
         "from": "dist",
         "to": "app",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "win": {
