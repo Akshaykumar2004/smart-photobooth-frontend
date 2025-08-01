@@ -32,17 +32,12 @@ const PreviewScreen: React.FC = () => {
   const [originalPhotos, setOriginalPhotos] = useState<Map<number, string>>(new Map());
   const [ghibliVersions, setGhibliVersions] = useState<Map<number, string>>(new Map());
   const [ghibliError, setGhibliError] = useState('');
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  const [touchStartPos, setTouchStartPos] = useState<{ x: number; y: number } | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
   const [selectedGhibliIndices, setSelectedGhibliIndices] = useState<Set<number>>(new Set());
-  const [batchConverting, setBatchConverting] = useState(false);
   const [showGhibliUpgradePayment, setShowGhibliUpgradePayment] = useState(false);
   
   const apiService = ApiService.getInstance();
   const steps = ['Welcome', 'Payment', 'Capture', 'Preview', 'Delivery'];
-  const maxPhotosInStrip = 4; // Maximum photos allowed in the strip
+  const maxPhotosInStrip = 4;
   
   const handlePhotoSelect = (index: number) => {
     setSelectedPhotoIndex(index);
@@ -71,51 +66,6 @@ const PreviewScreen: React.FC = () => {
     };
     setAllPhotos(newPhotos);
   };
-  
-  const handleConvertToGhibli = async (photoIndex: number) => {
-    // Check if user has Ghibli package
-    if (userInfo.packageType !== 'ghibli') {
-      setShowGhibliUpgradePayment(true);
-      return;
-    }
-    
-    // For Ghibli package, allow up to 2 conversions
-    if (settings.ghibliConversionsUsed >= 2) {
-      setGhibliError('You have used all 2 Ghibli conversions included in your package.');
-      return;
-    }
-
-    setConvertingGhibli(true);
-    setGhibliError('');
-    try {
-      const originalPhoto = allPhotos[photoIndex];
-      
-      // Store original photo data if not already stored
-      if (!originalPhotos.has(photoIndex)) {
-        setOriginalPhotos(prev => new Map(prev.set(photoIndex, originalPhoto.dataUrl)));
-      }
-      
-      const convertedDataUrl = await apiService.convertToGhibliStyle(originalPhoto.dataUrl);
-      
-      // Store the Ghibli version
-      setGhibliVersions(prev => new Map(prev.set(photoIndex, convertedDataUrl)));
-      
-      const newPhotos = [...allPhotos];
-      newPhotos[photoIndex] = {
-        ...originalPhoto,
-        dataUrl: convertedDataUrl,
-        filter: 'ghibli'
-      };
-      setAllPhotos(newPhotos);
-      setGhibliPhotos(prev => new Set([...prev, photoIndex]));
-      setSettings(prev => ({ ...prev, ghibliConversionsUsed: prev.ghibliConversionsUsed + 1 }));
-    } catch (error) {
-      console.error('Failed to convert image:', error);
-      setGhibliError('We apologize, but the Ghibli style conversion service is temporarily unavailable. Please try again later or continue with your beautiful original photos.');
-    } finally {
-      setConvertingGhibli(false);
-    }
-  };
 
   const handleGhibliSelection = (index: number) => {
     setSelectedGhibliIndices(prev => {
@@ -129,8 +79,11 @@ const PreviewScreen: React.FC = () => {
     });
   };
 
-  const handleBatchGhibliConversion = async () => {
-    if (selectedGhibliIndices.size === 0) return;
+  const handleGhibliConversion = async () => {
+    if (selectedGhibliIndices.size !== 2) {
+      setGhibliError('Please select exactly 2 photos for Ghibli conversion.');
+      return;
+    }
     
     // Check if user has Ghibli package
     if (userInfo.packageType !== 'ghibli') {
@@ -138,18 +91,16 @@ const PreviewScreen: React.FC = () => {
       return;
     }
     
-    setBatchConverting(true);
+    setConvertingGhibli(true);
     setGhibliError('');
     
     try {
       const indicesToConvert = Array.from(selectedGhibliIndices);
       
       for (const photoIndex of indicesToConvert) {
-        if (settings.ghibliConversionsUsed >= 2) break;
-        
         const originalPhoto = allPhotos[photoIndex];
         
-        // Store original photo data if not already stored
+        // Store original photo data
         if (!originalPhotos.has(photoIndex)) {
           setOriginalPhotos(prev => new Map(prev.set(photoIndex, originalPhoto.dataUrl)));
         }
@@ -159,7 +110,7 @@ const PreviewScreen: React.FC = () => {
         // Store the Ghibli version
         setGhibliVersions(prev => new Map(prev.set(photoIndex, convertedDataUrl)));
         
-        // Update photos while preserving other Ghibli photos
+        // Update photos
         setAllPhotos(prevPhotos => {
           const newPhotos = [...prevPhotos];
           newPhotos[photoIndex] = {
@@ -171,82 +122,15 @@ const PreviewScreen: React.FC = () => {
         });
         
         setGhibliPhotos(prev => new Set([...prev, photoIndex]));
-        setSettings(prev => ({ ...prev, ghibliConversionsUsed: prev.ghibliConversionsUsed + 1 }));
       }
       
+      setSettings(prev => ({ ...prev, ghibliConversionsUsed: 2 }));
       setSelectedGhibliIndices(new Set());
     } catch (error) {
       console.error('Failed to convert images:', error);
       setGhibliError('Ghibli conversion failed. Please try again.');
     } finally {
-      setBatchConverting(false);
-    }
-  };
-  
-  const handleSwapToOriginal = (photoIndex: number) => {
-    const originalDataUrl = originalPhotos.get(photoIndex);
-    if (originalDataUrl) {
-      const newPhotos = [...allPhotos];
-      newPhotos[photoIndex] = {
-        ...newPhotos[photoIndex],
-        dataUrl: originalDataUrl,
-        filter: 'normal'
-      };
-      setAllPhotos(newPhotos);
-      // Don't remove from ghibliPhotos set - we still have the Ghibli version stored
-    }
-  };
-
-  const handleSwapToGhibli = (photoIndex: number) => {
-    const ghibliDataUrl = ghibliVersions.get(photoIndex);
-    if (ghibliDataUrl) {
-      const newPhotos = [...allPhotos];
-      newPhotos[photoIndex] = {
-        ...newPhotos[photoIndex],
-        dataUrl: ghibliDataUrl,
-        filter: 'ghibli'
-      };
-      setAllPhotos(newPhotos);
-    }
-  };
-
-  const handleAddOriginalVersion = (photoIndex: number) => {
-    if (allPhotos.length >= maxPhotosInStrip) {
-      setGhibliError(`Maximum ${maxPhotosInStrip} photos allowed in the strip. Remove a photo first.`);
-      return;
-    }
-
-    const originalDataUrl = originalPhotos.get(photoIndex);
-    if (originalDataUrl) {
-      const originalPhoto = {
-        dataUrl: originalDataUrl,
-        filter: 'normal',
-        frame: null
-      };
-      
-      // Add the original version as a new photo
-      setAllPhotos(prev => [...prev, originalPhoto]);
-      setGhibliError('');
-    }
-  };
-
-  const handleAddGhibliVersion = (photoIndex: number) => {
-    if (allPhotos.length >= maxPhotosInStrip) {
-      setGhibliError(`Maximum ${maxPhotosInStrip} photos allowed in the strip. Remove a photo first.`);
-      return;
-    }
-
-    const ghibliDataUrl = ghibliVersions.get(photoIndex);
-    if (ghibliDataUrl) {
-      const ghibliPhoto = {
-        dataUrl: ghibliDataUrl,
-        filter: 'ghibli',
-        frame: null
-      };
-      
-      // Add the Ghibli version as a new photo
-      setAllPhotos(prev => [...prev, ghibliPhoto]);
-      setGhibliError('');
+      setConvertingGhibli(false);
     }
   };
 
@@ -259,146 +143,36 @@ const PreviewScreen: React.FC = () => {
     const newPhotos = allPhotos.filter((_, index) => index !== photoIndex);
     setAllPhotos(newPhotos);
     
-    // Update ghibli photos set
-    const newGhibliPhotos = new Set<number>();
-    ghibliPhotos.forEach(index => {
-      if (index < photoIndex) {
-        newGhibliPhotos.add(index);
-      } else if (index > photoIndex) {
-        newGhibliPhotos.add(index - 1);
-      }
-    });
-    setGhibliPhotos(newGhibliPhotos);
-    
-    // Update original photos map
-    const newOriginalPhotos = new Map<number, string>();
-    originalPhotos.forEach((dataUrl, index) => {
-      if (index < photoIndex) {
-        newOriginalPhotos.set(index, dataUrl);
-      } else if (index > photoIndex) {
-        newOriginalPhotos.set(index - 1, dataUrl);
-      }
-    });
-    setOriginalPhotos(newOriginalPhotos);
-    
-    // Update Ghibli versions map
-    const newGhibliVersions = new Map<number, string>();
-    ghibliVersions.forEach((dataUrl, index) => {
-      if (index < photoIndex) {
-        newGhibliVersions.set(index, dataUrl);
-      } else if (index > photoIndex) {
-        newGhibliVersions.set(index - 1, dataUrl);
-      }
-    });
-    setGhibliVersions(newGhibliVersions);
-    
-    // Adjust selected photo index
+    // Update selected photo index
     if (selectedPhotoIndex >= photoIndex && selectedPhotoIndex > 0) {
       setSelectedPhotoIndex(selectedPhotoIndex - 1);
     }
     
-    // Clear error when photo is removed
     setGhibliError('');
   };
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
-    setDraggedIndex(index);
-    setIsDragging(true);
-    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', index.toString());
   };
   
-  const handleDragOver = (e: React.DragEvent, index: number) => {
+  const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    setDragOverIndex(index);
-  };
-  
-  const handleDragLeave = () => {
-    setDragOverIndex(null);
   };
   
   const handleDrop = (e: React.DragEvent, dropIndex: number) => {
     e.preventDefault();
+    const dragIndex = parseInt(e.dataTransfer.getData('text/plain'));
     
-    if (draggedIndex === null || draggedIndex === dropIndex) {
-      setDraggedIndex(null);
-      setDragOverIndex(null);
-      return;
-    }
+    if (dragIndex === dropIndex) return;
     
     const newPhotos = [...allPhotos];
-    const draggedPhoto = newPhotos[draggedIndex];
+    const draggedPhoto = newPhotos[dragIndex];
     
-    // Remove the dragged photo
-    newPhotos.splice(draggedIndex, 1);
-    
-    // Insert at new position
+    newPhotos.splice(dragIndex, 1);
     newPhotos.splice(dropIndex, 0, draggedPhoto);
     
     setAllPhotos(newPhotos);
     setSelectedPhotoIndex(dropIndex);
-    setDraggedIndex(null);
-    setDragOverIndex(null);
-  };
-  
-  const handleDragEnd = () => {
-    setDraggedIndex(null);
-    setDragOverIndex(null);
-    setIsDragging(false);
-  };
-  
-  // Touch event handlers for mobile drag and drop
-  const handleTouchStart = (e: React.TouchEvent, index: number) => {
-    e.preventDefault(); // Prevent scrolling and other touch behaviors
-    const touch = e.touches[0];
-    setTouchStartPos({ x: touch.clientX, y: touch.clientY });
-    setDraggedIndex(index);
-    setIsDragging(true);
-  };
-  
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!touchStartPos || draggedIndex === null) return;
-    
-    e.preventDefault(); // Prevent scrolling
-    const touch = e.touches[0];
-    const deltaX = touch.clientX - touchStartPos.x;
-    const deltaY = touch.clientY - touchStartPos.y;
-    
-    // Only start drag if moved significantly
-    if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
-      // Find element under touch point
-      const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-      const photoContainer = elementBelow?.closest('[data-photo-index]');
-      
-      if (photoContainer) {
-        const targetIndex = parseInt(photoContainer.getAttribute('data-photo-index') || '0');
-        setDragOverIndex(targetIndex);
-      }
-    }
-  };
-  
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    e.preventDefault();
-    
-    if (draggedIndex !== null && dragOverIndex !== null && draggedIndex !== dragOverIndex) {
-      // Perform the drop operation
-      const newPhotos = [...allPhotos];
-      const draggedPhoto = newPhotos[draggedIndex];
-      
-      // Remove the dragged photo
-      newPhotos.splice(draggedIndex, 1);
-      
-      // Insert at new position
-      newPhotos.splice(dragOverIndex, 0, draggedPhoto);
-      
-      setAllPhotos(newPhotos);
-      setSelectedPhotoIndex(dragOverIndex);
-    }
-    
-    // Reset all drag states
-    setTouchStartPos(null);
-    setDraggedIndex(null);
-    setDragOverIndex(null);
-    setIsDragging(false);
   };
   
   const handleNext = () => {
@@ -412,14 +186,12 @@ const PreviewScreen: React.FC = () => {
 
   const handleGhibliUpgradePayment = () => {
     setShowGhibliUpgradePayment(false);
-    // Update user info to Ghibli package
     setUserInfo(prev => ({ ...prev, packageType: 'ghibli' }));
     setGhibliError('');
   };
 
-  // Calculate upgrade price (difference between packages)
   const getUpgradePrice = () => {
-    return 50; // Fixed upgrade price for Ghibli features
+    return 50;
   };
 
   return (
@@ -439,7 +211,6 @@ const PreviewScreen: React.FC = () => {
                 <div className="space-y-2 text-gray-300">
                   <p>✨ <strong>2 FREE Ghibli conversions</strong></p>
                   <p>🎯 <strong>Mix original and Ghibli photos</strong></p>
-                  <p>🔄 <strong>Switch between versions anytime</strong></p>
                   <p>📸 <strong>All your original photos included</strong></p>
                 </div>
               </div>
@@ -462,500 +233,324 @@ const PreviewScreen: React.FC = () => {
           </div>
         </div>
       ) : (
-    <div className="min-h-screen flex flex-col items-center p-4 animate-fade-in">
-      <div className="w-full max-w-2xl">
-        <ProgressBar steps={steps} currentStep={3} />
-        
-        <div className="flex justify-between items-center mb-4">
-          <Button 
-            variant="outline" 
-            icon={ArrowLeft} 
-            onClick={() => setStage('capture')}
-          >
-            Back to Capture
-          </Button>
-          
-          <Button 
-            variant="primary" 
-            icon={ArrowRight} 
-            iconPosition="right"
-            className="btn-racing"
-            onClick={handleNext}
-          >
-            Continue to Delivery
-          </Button>
-        </div>
-        
-        <Card animate className="w-full">
-          <h2 className="text-3xl font-bold mb-6">Edit Your Photos</h2>
-          
-          {/* Main photo preview */}
-          <div className="relative aspect-[4/3] bg-black rounded-lg overflow-hidden mb-6">
-            <img 
-              src={allPhotos[selectedPhotoIndex]?.dataUrl} 
-              alt="Preview" 
-              className={`w-full h-full object-cover ${allPhotos[selectedPhotoIndex]?.filter || 'normal'}`}
-            />
+        <div className="min-h-screen flex flex-col p-4 animate-fade-in">
+          <div className="w-full max-w-7xl mx-auto">
+            <ProgressBar steps={steps} currentStep={3} />
             
-            {/* Ghibli conversion indicator */}
-            {ghibliPhotos.has(selectedPhotoIndex) && allPhotos[selectedPhotoIndex]?.filter === 'ghibli' && (
-              <div className="absolute top-4 left-4 bg-purple-500/80 px-3 py-1 rounded-full">
-                <span className="text-white text-sm font-medium flex items-center gap-1">
-                  <Sparkles size={14} />
-                  Ghibli Style
-                </span>
-              </div>
-            )}
-            
-            {/* Edit button overlay */}
-            <div className="absolute bottom-4 right-4">
-              <Button
-                variant="accent"
-                icon={Edit}
-                onClick={() => handleEditPhoto(selectedPhotoIndex)}
-                className="bg-black/70 hover:bg-black/90"
+            <div className="flex justify-between items-center mb-4">
+              <Button 
+                variant="outline" 
+                icon={ArrowLeft} 
+                onClick={() => setStage('capture')}
               >
-                Edit Photo
+                Back to Capture
+              </Button>
+              
+              <Button 
+                variant="primary" 
+                icon={ArrowRight} 
+                iconPosition="right"
+                className="btn-racing"
+                onClick={handleNext}
+              >
+                Continue to Delivery
               </Button>
             </div>
-          </div>
-          
-          {/* Filter Selector */}
-          <div className="mb-6">
-            <h3 className="text-xl font-medium mb-3 flex items-center gap-2">
-              <Palette className="text-accent" />
-              Filters
-            </h3>
-            <FilterSelector 
-              currentFilter={allPhotos[selectedPhotoIndex]?.filter || 'normal'}
-              onFilterChange={handleFilterChange}
-            />
-          </div>
-          
-          {/* Photo arrangement grid */}
-          <div className="mb-6">
-            <h3 className="text-xl font-medium mb-3">
-              Photo Order ({allPhotos.length}/{maxPhotosInStrip}) - Drag to Rearrange
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              {allPhotos.map((photo, index) => (
-                <div
-                  key={index}
-                  data-photo-index={index}
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, index)}
-                  onDragOver={(e) => handleDragOver(e, index)}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, index)}
-                  onDragEnd={handleDragEnd}
-                  onTouchStart={(e) => handleTouchStart(e, index)}
-                  onTouchMove={handleTouchMove}
-                  onTouchEnd={handleTouchEnd}
-                  className={`relative group cursor-move border-2 rounded-lg overflow-hidden transition-all ${
-                    selectedPhotoIndex === index ? 'border-primary' : 'border-gray-700'
-                  } ${draggedIndex === index ? 'opacity-50 scale-95' : ''} ${
-                    dragOverIndex === index && draggedIndex !== index ? 'border-accent border-dashed' : ''
-                  } ${isDragging ? 'select-none' : ''}`}
-                  onClick={() => handlePhotoSelect(index)}
-                  style={{
-                    touchAction: 'none', // Disable default touch behaviors
-                    userSelect: 'none',
-                    WebkitUserSelect: 'none'
-                  }}
-                >
-                  <img 
-                    src={photo.dataUrl} 
-                    alt={`Photo ${index + 1}`}
-                    className={`w-full aspect-square object-cover ${photo.filter || 'normal'}`}
-                    draggable={false} // Prevent image drag
-                  />
-                  
-                  {/* Photo number */}
-                  <div className="absolute top-2 left-2 bg-black/70 text-white text-sm px-2 py-1 rounded">
-                    #{index + 1}
-                  </div>
-                  
-                  {/* Drag handle */}
-                  <div className="absolute top-2 right-2 bg-black/70 text-white p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                    <GripVertical size={12} />
-                  </div>
-                  
-                  {/* Ghibli indicator */}
-                  {ghibliPhotos.has(index) && photo.filter === 'ghibli' && (
-                    <div className="absolute top-8 right-2 bg-purple-500/80 p-1 rounded">
-                      <Sparkles size={12} className="text-white" />
-                    </div>
-                  )}
-                  
-                  {/* Ghibli Selection Checkbox */}
-                  {userInfo.packageType === 'ghibli' && !ghibliPhotos.has(index) && settings.ghibliConversionsUsed < 2 && (
-                    <div 
-                      className="absolute top-2 left-8 bg-purple-600/80 p-2 rounded animate-pulse cursor-pointer touch-manipulation"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleGhibliSelection(index);
-                      }}
-                      onTouchEnd={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        handleGhibliSelection(index);
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedGhibliIndices.has(index)}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          handleGhibliSelection(index);
-                        }}
-                        disabled={!selectedGhibliIndices.has(index) && selectedGhibliIndices.size >= 2}
-                        className="w-6 h-6 text-purple-600 bg-white border-2 border-purple-300 rounded focus:ring-purple-500 focus:ring-2 pointer-events-none"
-                        readOnly
-                      />
-                    </div>
-                  )}
-                  
-                  {/* Ghibli Selection Label */}
-                  {userInfo.packageType === 'ghibli' && !ghibliPhotos.has(index) && settings.ghibliConversionsUsed < 2 && (
-                    <div 
-                      className="absolute bottom-8 left-2 bg-purple-600/90 text-white text-xs px-2 py-1 rounded font-medium cursor-pointer touch-manipulation"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleGhibliSelection(index);
-                      }}
-                      onTouchEnd={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        handleGhibliSelection(index);
-                      }}
-                    >
-                      ✨ Select for Ghibli
-                    </div>
-                  )}
-                  
-                  {/* Edit button */}
-                  <div className="absolute bottom-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEditPhoto(index);
-                      }}
-                      className="bg-black/70 text-white p-1 rounded hover:bg-black/90"
-                    >
-                      <Edit size={12} />
-                    </button>
-                  </div>
-                  
-                  {/* Remove button */}
-                  <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRemovePhoto(index);
-                      }}
-                      className="bg-red-600/80 text-white p-1 rounded hover:bg-red-700/90"
-                    >
-                      <Trash2 size={12} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
             
-            <div className="mt-3 text-base text-gray-400">
-              <p>• Click to select • Drag to reorder • Trash icon to remove</p>
-            </div>
-          </div>
-          
-          {/* Ghibli Style Conversion */}
-          <div className="mb-6">
-            <h3 className="text-xl font-medium mb-3 flex items-center gap-2">
-              <Sparkles className="text-purple-400" />
-              Ghibli AI ({settings.ghibliConversionsUsed}/2 used)
-              {userInfo.packageType !== 'ghibli' && (
-                <span className="text-base text-orange-400">(Need Ghibli Package)</span>
-              )}
-            </h3>
-            
-            <div className="bg-gradient-to-r from-purple-900/20 to-pink-900/20 p-4 rounded-lg border-2 border-purple-500/50 animate-pulse-light">
-              {userInfo.packageType === 'ghibli' ? (
-                <div className="text-gray-300 mb-4 text-center bg-purple-900/30 rounded-lg p-3 border border-purple-400/30">
-                  <p className="mb-2 text-xl font-bold text-purple-300">✨ Ghibli Magic Available!</p>
-                  <p className="text-base text-purple-200 mb-2">
-                    🎯 <strong>Step 1:</strong> Check boxes on photos you want to convert
-                  </p>
-                  <p className="text-base text-purple-200">
-                    🎨 <strong>Step 2:</strong> Click the glowing convert button below
-                  </p>
-                </div>
-              ) : (
-                <div className="text-center bg-gradient-to-r from-purple-900/30 to-pink-900/30 rounded-lg p-4 border border-purple-400/50 mb-4">
-                  <p className="text-xl font-bold text-purple-300 mb-2">🎨 Unlock Ghibli Magic!</p>
-                  <p className="text-base text-purple-200 mb-3">
-                    Transform your photos into beautiful Studio Ghibli artwork
-                  </p>
-                  <Button
-                    variant="accent"
-                    icon={Sparkles}
-                    onClick={() => setShowGhibliUpgradePayment(true)}
-                    className="btn-ultra-neon bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-                  >
-                    ✨ Upgrade Now (+₹50)
-                  </Button>
-                </div>
-              )}
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                {/* Batch Conversion Button */}
-                {userInfo.packageType === 'ghibli' && (
-                  <Button
-                    variant="accent"
-                    icon={batchConverting ? Loader : Sparkles}
-                    onClick={handleBatchGhibliConversion}
-                    disabled={batchConverting || selectedGhibliIndices.size === 0 || settings.ghibliConversionsUsed >= 2}
-                    className="col-span-full sm:col-span-2 btn-ultra-neon text-lg font-bold"
-                  >
-                    {batchConverting ? (
-                      <>
-                        <span className="animate-spin mr-2">⟳</span>
-                        🎨 Converting {selectedGhibliIndices.size} photos to Ghibli...
-                      </>
-                    ) : (
-                      `✨ Convert ${selectedGhibliIndices.size} Photos to Ghibli Style`
+            {/* Main Layout: 70% Left, 30% Right */}
+            <div className="flex gap-6">
+              {/* Left Side - 70% - Edit Your Photos */}
+              <div className="flex-1" style={{ flex: '0 0 70%' }}>
+                <Card animate className="h-full">
+                  <h2 className="text-3xl font-bold mb-6">Edit Your Photos</h2>
+                  
+                  {/* Main photo preview */}
+                  <div className="relative aspect-[4/3] bg-black rounded-lg overflow-hidden mb-6">
+                    <img 
+                      src={allPhotos[selectedPhotoIndex]?.dataUrl} 
+                      alt="Preview" 
+                      className={`w-full h-full object-cover ${allPhotos[selectedPhotoIndex]?.filter || 'normal'}`}
+                    />
+                    
+                    {/* Ghibli conversion indicator */}
+                    {ghibliPhotos.has(selectedPhotoIndex) && allPhotos[selectedPhotoIndex]?.filter === 'ghibli' && (
+                      <div className="absolute top-4 left-4 bg-purple-500/80 px-3 py-1 rounded-full">
+                        <span className="text-white text-sm font-medium flex items-center gap-1">
+                          <Sparkles size={14} />
+                          Ghibli Style
+                        </span>
+                      </div>
                     )}
-                  </Button>
-                )}
-                
-                {/* Upgrade to Ghibli Button for Basic Package Users */}
-                {userInfo.packageType === 'basic' && (
-                  <Button
-                    variant="accent"
-                    icon={Sparkles}
-                    onClick={() => setShowGhibliUpgradePayment(true)}
-                    className="col-span-full btn-ultra-neon text-lg font-bold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-                  >
-                    ✨ Upgrade to Ghibli Package (+₹50)
-                  </Button>
-                )}
-                
-                <Button
-                  variant="accent"
-                  icon={convertingGhibli ? Loader : Sparkles}
-                  onClick={() => handleConvertToGhibli(selectedPhotoIndex)}
-                  disabled={convertingGhibli || batchConverting || ghibliPhotos.has(selectedPhotoIndex) || settings.ghibliConversionsUsed >= 2 || userInfo.packageType !== 'ghibli'}
-                  className="btn-racing"
-                >
-                  {convertingGhibli ? (
-                    <>
-                      <span className="animate-spin mr-2">⟳</span>
-                      🎨 Converting... (30-60s)
-                    </>
-                  ) : ghibliPhotos.has(selectedPhotoIndex) ? (
-                    allPhotos[selectedPhotoIndex]?.filter === 'ghibli' ? '✅ Using Ghibli' : '🔄 Switch to Ghibli'
-                  ) : userInfo.packageType !== 'ghibli' ? (
-                    '🔒 Upgrade to Ghibli'
-                  ) : settings.ghibliConversionsUsed >= 2 ? (
-                    '🚫 All Conversions Used'
-                  ) : (
-                    '✨ Convert Current Photo'
-                  )}
-                </Button>
-                
-                {ghibliPhotos.has(selectedPhotoIndex) && allPhotos[selectedPhotoIndex]?.filter === 'ghibli' && (
-                  <Button
-                    variant="outline"
-                    icon={RotateCcw}
-                    onClick={() => handleSwapToOriginal(selectedPhotoIndex)}
-                    className="border-orange-500 text-orange-400 hover:bg-orange-500/10"
-                  >
-                    🔄 Use Original
-                  </Button>
-                )}
-                
-                {ghibliPhotos.has(selectedPhotoIndex) && allPhotos[selectedPhotoIndex]?.filter === 'normal' && (
-                  <Button
-                    variant="accent"
-                    icon={Sparkles}
-                    onClick={() => handleSwapToGhibli(selectedPhotoIndex)}
-                    className="bg-purple-600 hover:bg-purple-700 btn-racing"
-                  >
-                    ✨ Use Ghibli Version
-                  </Button>
-                )}
-                
-                {/* Add Original Version Button */}
-                {ghibliPhotos.has(selectedPhotoIndex) && allPhotos[selectedPhotoIndex]?.filter === 'ghibli' && (
-                  <Button
-                    variant="outline"
-                    icon={Plus}
-                    onClick={() => handleAddOriginalVersion(selectedPhotoIndex)}
-                    disabled={allPhotos.length >= maxPhotosInStrip}
-                    className="border-blue-500 text-blue-400 hover:bg-blue-500/10"
-                  >
-                    ➕ Add Original Too
-                  </Button>
-                )}
-                
-                {/* Add Ghibli Version Button */}
-                {ghibliPhotos.has(selectedPhotoIndex) && allPhotos[selectedPhotoIndex]?.filter === 'normal' && (
-                  <Button
-                    variant="outline"
-                    icon={Plus}
-                    onClick={() => handleAddGhibliVersion(selectedPhotoIndex)}
-                    disabled={allPhotos.length >= maxPhotosInStrip}
-                    className="border-purple-500 text-purple-400 hover:bg-purple-500/10"
-                  >
-                    ✨ Add Ghibli Too
-                  </Button>
-                )}
-                
-              </div>
-              
-              {/* Ghibli Error Message */}
-              {ghibliError && (
-                <div className="mt-3 p-3 bg-red-900/20 border border-red-500/30 rounded-lg">
-                  <div className="flex items-start gap-2">
-                    <AlertCircle className="text-red-400 mt-0.5" size={16} />
-                    <div>
-                      <p className="text-red-400 text-sm font-medium mb-1">
-                        {ghibliError.includes('Maximum') ? 'Strip Full' : 'Conversion Service Unavailable'}
-                      </p>
-                      <p className="text-gray-300 text-sm">{ghibliError}</p>
+                    
+                    {/* Edit button overlay */}
+                    <div className="absolute bottom-4 right-4">
+                      <Button
+                        variant="accent"
+                        icon={Edit}
+                        onClick={() => handleEditPhoto(selectedPhotoIndex)}
+                        className="bg-black/70 hover:bg-black/90"
+                      >
+                        Edit Photo
+                      </Button>
                     </div>
                   </div>
-                </div>
-              )}
-              
-              {ghibliPhotos.size > 0 && (
-                <div className="mt-3 text-sm text-purple-300">
-                  ✨ {ghibliPhotos.size} Ghibli photos ready
-                </div>
-              )}
-              
-              {userInfo.packageType === 'ghibli' && (
-                <div className="mt-2 text-sm text-gray-400 text-center">
-                  Takes 30-60 seconds per photo
-                </div>
-              )}
-              
-              {selectedGhibliIndices.size > 0 && (
-                <div className="mt-3 p-3 bg-purple-900/30 border border-purple-400/50 rounded-lg animate-pulse-light">
-                  <div className="text-center">
-                    <p className="text-lg font-bold text-purple-300 mb-1">
-                      🎯 {selectedGhibliIndices.size} Photos Ready for Ghibli Magic!
+                  
+                  {/* Photo Order - Horizontal Line */}
+                  <div className="mb-6">
+                    <h3 className="text-xl font-medium mb-3">
+                      Photo Order ({allPhotos.length}/{maxPhotosInStrip}) - Drag to Rearrange
+                    </h3>
+                    <div className="flex gap-4 overflow-x-auto pb-2">
+                      {allPhotos.map((photo, index) => (
+                        <div
+                          key={index}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, index)}
+                          onDragOver={handleDragOver}
+                          onDrop={(e) => handleDrop(e, index)}
+                          className={`relative group cursor-pointer border-2 rounded-lg overflow-hidden transition-all flex-shrink-0 w-32 h-32 ${
+                            selectedPhotoIndex === index ? 'border-primary' : 'border-gray-700'
+                          } ${
+                            userInfo.packageType === 'ghibli' && !ghibliPhotos.has(index) && settings.ghibliConversionsUsed < 2 && selectedGhibliIndices.has(index) ? 'ring-2 ring-purple-400' : ''
+                          }`}
+                          onClick={() => {
+                            handlePhotoSelect(index);
+                            // Handle Ghibli selection on touch/click
+                            if (userInfo.packageType === 'ghibli' && !ghibliPhotos.has(index) && settings.ghibliConversionsUsed < 2) {
+                              handleGhibliSelection(index);
+                            }
+                          }}
+                        >
+                          <img 
+                            src={photo.dataUrl} 
+                            alt={`Photo ${index + 1}`}
+                            className={`w-full h-full object-cover ${photo.filter || 'normal'}`}
+                            draggable={false}
+                          />
+                          
+                          {/* Photo number */}
+                          <div className="absolute top-1 left-1 bg-black/70 text-white text-xs px-1 py-0.5 rounded">
+                            #{index + 1}
+                          </div>
+                          
+                          {/* Drag handle */}
+                          <div className="absolute top-1 right-1 bg-black/70 text-white p-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                            <GripVertical size={10} />
+                          </div>
+                          
+                          {/* Ghibli indicator */}
+                          {ghibliPhotos.has(index) && photo.filter === 'ghibli' && (
+                            <div className="absolute bottom-1 right-1 bg-purple-500/80 p-0.5 rounded">
+                              <Sparkles size={10} className="text-white" />
+                            </div>
+                          )}
+                          
+                          {/* Ghibli Selection Checkbox */}
+                          {/* Ghibli Selection Indicator */}
+                          {userInfo.packageType === 'ghibli' && !ghibliPhotos.has(index) && settings.ghibliConversionsUsed < 2 && selectedGhibliIndices.has(index) && (
+                            <div className="absolute bottom-1 left-1 bg-purple-500/90 p-1 rounded">
+                              <div className="w-3 h-3 bg-white rounded-full flex items-center justify-center">
+                                <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Remove button */}
+                          <div className="absolute top-1 right-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRemovePhoto(index);
+                              }}
+                              className="bg-red-600/80 text-white p-0.5 rounded hover:bg-red-700/90"
+                            >
+                              <Trash2 size={10} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Strip Preview */}
+                  <div className="bg-gray-900 rounded-lg p-4">
+                    <h3 className="text-xl font-medium mb-3 text-center">Final Strip Preview</h3>
+                    <div className="flex flex-col gap-1 max-w-[200px] mx-auto bg-white p-2 rounded">
+                      {allPhotos.map((photo, index) => (
+                        <div key={index} className="aspect-[4/3] w-full">
+                          <img 
+                            src={photo.dataUrl} 
+                            alt={`Strip ${index + 1}`}
+                            className={`w-full h-full object-cover ${photo.filter || 'normal'}`}
+                          />
+                        </div>
+                      ))}
+                      {/* Show empty slots */}
+                      {Array.from({ length: maxPhotosInStrip - allPhotos.length }).map((_, index) => (
+                        <div key={`empty-${index}`} className="aspect-[4/3] w-full bg-gray-300 flex items-center justify-center">
+                          <span className="text-gray-500 text-sm">Empty</span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-center text-base text-gray-400 mt-2">
+                      2 identical strips • 4x6 inches each
                     </p>
-                    <p className="text-base text-purple-200">
-                      Click the glowing "Convert" button above to transform them ✨
-                    </p>
                   </div>
-                </div>
-              )}
+                </Card>
+              </div>
               
-              {selectedGhibliIndices.size === 2 && settings.ghibliConversionsUsed === 0 && (
-                <div className="mt-3 p-3 bg-green-900/30 border border-green-400/50 rounded-lg">
-                  <div className="text-center">
-                    <p className="text-lg font-bold text-green-300">
-                      🎉 Perfect! Ready to use all your Ghibli conversions!
-                    </p>
-                  </div>
-                </div>
-              )}
-              
-              {selectedGhibliIndices.size > (2 - settings.ghibliConversionsUsed) && (
-                <div className="mt-3 p-3 bg-orange-900/30 border border-orange-400/50 rounded-lg">
-                  <div className="text-center">
-                    <p className="text-lg font-bold text-orange-300">
-                      ⚠️ You can only convert {2 - settings.ghibliConversionsUsed} more photos
-                    </p>
-                    <p className="text-base text-orange-200">
-                      Uncheck some photos to proceed
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-          
-          {/* Ghibli Selection Instructions */}
-          {userInfo.packageType === 'ghibli' && settings.ghibliConversionsUsed < 2 && (
-            <div className="mb-6 bg-gradient-to-r from-purple-900/20 to-pink-900/20 border-2 border-purple-400/50 rounded-lg p-4 animate-pulse-light">
-              <div className="text-center">
-                <h4 className="text-lg font-bold text-purple-300 mb-2">🎯 How to Use Ghibli Magic:</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-base text-gray-300">
-                  <div className="bg-purple-800/30 p-3 rounded-lg">
-                    <p className="font-medium text-purple-200">Step 1</p>
-                    <p>✅ Check photos you want</p>
-                  </div>
-                  <div className="bg-purple-800/30 p-3 rounded-lg">
-                    <p className="font-medium text-purple-200">Step 2</p>
-                    <p>🎨 Click glowing convert button</p>
-                  </div>
-                  <div className="bg-purple-800/30 p-3 rounded-lg">
-                    <p className="font-medium text-purple-200">Step 3</p>
-                    <p>🔄 Add both versions if needed</p>
-                  </div>
+              {/* Right Side - 30% - Filters and Effects */}
+              <div className="w-full h-full" style={{ flex: '0 0 30%' }}>
+                <div className="space-y-6">
+                  {/* Filter Selector */}
+                  <Card animate className="flex-1">
+                    <h3 className="text-xl font-medium mb-3 flex items-center gap-2">
+                      <Palette className="text-accent" />
+                      Filters
+                    </h3>
+                    <div className="space-y-3">
+                      {[
+                        { name: 'normal', label: 'Original', preview: 'filter: none' },
+                        { name: 'grayscale', label: 'Black & White', preview: 'filter: grayscale(100%)' },
+                        { name: 'sepia', label: 'Vintage', preview: 'filter: sepia(80%)' },
+                        { name: 'ghibli', label: 'Ghibli Style', preview: 'filter: brightness(105%) contrast(110%) saturate(140%)' }
+                      ].map((filter) => (
+                        <button
+                          key={filter.name}
+                          onClick={() => handleFilterChange(filter.name)}
+                          disabled={filter.name === 'ghibli' && !ghibliPhotos.has(selectedPhotoIndex)}
+                          className={`w-full p-3 rounded-lg border-2 transition-all text-left ${
+                            (allPhotos[selectedPhotoIndex]?.filter || 'normal') === filter.name 
+                              ? 'border-primary bg-primary/20' 
+                              : 'border-gray-700 hover:border-gray-500 bg-gray-800/50'
+                          } ${
+                            filter.name === 'ghibli' && !ghibliPhotos.has(selectedPhotoIndex) 
+                              ? 'opacity-50 cursor-not-allowed' 
+                              : 'cursor-pointer'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-md overflow-hidden border border-gray-600">
+                              <img 
+                                src={allPhotos[selectedPhotoIndex]?.dataUrl} 
+                                alt={filter.label}
+                                className={`w-full h-full object-cover ${filter.name}`}
+                                style={{ filter: filter.name === 'ghibli' ? 'brightness(105%) contrast(110%) saturate(140%) hue-rotate(2deg) sepia(20%)' : undefined }}
+                              />
+                            </div>
+                            <div>
+                              <div className="font-medium text-white">{filter.label}</div>
+                              {filter.name === 'ghibli' && !ghibliPhotos.has(selectedPhotoIndex) && (
+                                <div className="text-xs text-gray-400">Convert to unlock</div>
+                              )}
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </Card>
+                  
+                  {/* Ghibli Style Conversion - Simplified */}
+                  <Card animate className="flex-1">
+                    <h3 className="text-xl font-medium mb-3 flex items-center gap-2">
+                      <Sparkles className="text-purple-400" />
+                      Ghibli AI
+                    </h3>
+                    
+                    {userInfo.packageType === 'ghibli' ? (
+                      <div className="space-y-4">
+                        <div className="bg-gradient-to-r from-purple-900/20 to-pink-900/20 p-3 rounded-lg border border-purple-500/30">
+                          <p className="text-sm text-purple-200 mb-1">
+                            ✨ Touch 2 photos to select, then convert
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            Selected: {selectedGhibliIndices.size}/2
+                          </p>
+                        </div>
+                        
+                        <Button
+                          variant="accent"
+                          icon={convertingGhibli ? Loader : Sparkles}
+                          onClick={handleGhibliConversion}
+                          disabled={convertingGhibli || selectedGhibliIndices.size !== 2}
+                          className="w-full btn-ultra-neon"
+                        >
+                          {convertingGhibli ? (
+                            <>
+                              <span className="animate-spin mr-2">⟳</span>
+                              Converting...
+                            </>
+                          ) : (
+                            `✨ Convert ${selectedGhibliIndices.size} Photos`
+                          )}
+                        </Button>
+                        
+                        {ghibliError && (
+                          <div className="p-2 bg-red-900/20 border border-red-500/30 rounded text-red-400 text-sm">
+                            {ghibliError}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center bg-gradient-to-r from-purple-900/30 to-pink-900/30 rounded-lg p-4 border border-purple-400/50">
+                        <p className="text-purple-300 mb-3">🎨 Unlock Ghibli Magic!</p>
+                        <Button
+                          variant="accent"
+                          icon={Sparkles}
+                          onClick={() => setShowGhibliUpgradePayment(true)}
+                          className="w-full btn-ultra-neon"
+                        >
+                          ✨ Upgrade (+₹50)
+                        </Button>
+                      </div>
+                    )}
+                  </Card>
+                  
+                  {/* Photo Actions */}
+                  <Card animate className="flex-1">
+                    <h3 className="text-xl font-medium mb-3">Photo Actions</h3>
+                    <div className="space-y-2">
+                      <Button
+                        variant="outline"
+                        icon={Edit}
+                        onClick={() => handleEditPhoto(selectedPhotoIndex)}
+                        className="w-full"
+                      >
+                        Edit Current Photo
+                      </Button>
+                      
+                      <Button
+                        variant="outline"
+                        icon={RefreshCcw}
+                        onClick={() => {
+                          setAllPhotos([...photos]);
+                          setGhibliPhotos(new Set());
+                          setOriginalPhotos(new Map());
+                          setGhibliVersions(new Map());
+                          setGhibliError('');
+                          setSelectedPhotoIndex(0);
+                          setSettings(prev => ({ ...prev, ghibliConversionsUsed: 0 }));
+                        }}
+                        className="w-full"
+                      >
+                        Reset All Changes
+                      </Button>
+                    </div>
+                  </Card>
                 </div>
               </div>
             </div>
-          )}
-          
-          {/* Strip Preview */}
-          <div className="bg-gray-900 rounded-lg p-4">
-            <h3 className="text-xl font-medium mb-3 text-center">Final Strip Preview</h3>
-            <div className="flex flex-col gap-1 max-w-[200px] mx-auto bg-white p-2 rounded">
-              {allPhotos.map((photo, index) => (
-                <div key={index} className="aspect-[4/3] w-full">
-                  <img 
-                    src={photo.dataUrl} 
-                    alt={`Strip ${index + 1}`}
-                    className={`w-full h-full object-cover ${photo.filter || 'normal'}`}
-                  />
-                </div>
-              ))}
-              {/* Show empty slots */}
-              {Array.from({ length: maxPhotosInStrip - allPhotos.length }).map((_, index) => (
-                <div key={`empty-${index}`} className="aspect-[4/3] w-full bg-gray-300 flex items-center justify-center">
-                  <span className="text-gray-500 text-sm">Empty</span>
-                </div>
-              ))}
-            </div>
-            <p className="text-center text-base text-gray-400 mt-2">
-              2 identical strips • 4x6 inches each
-            </p>
           </div>
           
-          {/* Reset button - only show for basic package users */}
-          {userInfo.packageType === 'basic' && (
-            <div className="mt-6">
-            <Button
-              variant="outline"
-              icon={RefreshCcw}
-              onClick={() => {
-                setAllPhotos([...photos]);
-                setGhibliPhotos(new Set());
-                setOriginalPhotos(new Map());
-                setGhibliVersions(new Map());
-                setGhibliError('');
-                setSelectedPhotoIndex(0);
-                setSettings(prev => ({ ...prev, ghibliConversionsUsed: 0 }));
-              }}
-            >
-              Reset All Changes
-            </Button>
-            </div>
+          {/* Photo Editor Modal */}
+          {showEditor && (
+            <PhotoEditor
+              imageDataUrl={allPhotos[editingIndex].dataUrl}
+              onSave={handleSaveEdit}
+              onCancel={() => setShowEditor(false)}
+            />
           )}
-        </Card>
-      </div>
-      
-      {/* Photo Editor Modal */}
-      {showEditor && (
-        <PhotoEditor
-          imageDataUrl={allPhotos[editingIndex].dataUrl}
-          onSave={handleSaveEdit}
-          onCancel={() => setShowEditor(false)}
-        />
-      )}
-    </div>
+        </div>
       )}
     </>
   );

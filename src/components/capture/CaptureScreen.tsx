@@ -127,7 +127,7 @@ const CaptureScreen: React.FC = () => {
   }, [nextCaptureTimeout]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center p-4 animate-fade-in">
+    <div className="min-h-screen flex flex-col items-center p-1 animate-fade-in">
       <div className="w-full max-w-2xl">
         <ProgressBar steps={steps} currentStep={2} />
         

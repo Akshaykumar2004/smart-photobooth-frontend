@@ -43,8 +43,6 @@ interface PhotoBoothContextType {
   setIsLocked: (locked: boolean) => void;
   kioskMode: boolean;
   setKioskMode: (mode: boolean) => void;
-  backendConnected: boolean;
-  setBackendConnected: (connected: boolean) => void;
   photoStripBlob: Blob | null;
   setPhotoStripBlob: (blob: Blob | null) => void;
   settings: SettingsType;
@@ -77,7 +75,6 @@ export const PhotoBoothProvider: React.FC<{ children: ReactNode }> = ({ children
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
   const [isLocked, setIsLocked] = useState(false);
   const [kioskMode, setKioskMode] = useState(false);
-  const [backendConnected, setBackendConnected] = useState(false);
   const [photoStripBlob, setPhotoStripBlob] = useState<Blob | null>(null);
   const [settings, setSettings] = useState<SettingsType>({
     ghibliConversionLimit: 2, // Fixed at 2 for Ghibli package
@@ -163,8 +160,6 @@ export const PhotoBoothProvider: React.FC<{ children: ReactNode }> = ({ children
         setIsLocked,
         kioskMode,
         setKioskMode,
-        backendConnected,
-        setBackendConnected,
         photoStripBlob,
         setPhotoStripBlob,
         settings,

@@ -145,7 +145,6 @@ export class ApiService {
 
   // Convert image to Ghibli style using backend
   async convertToGhibliStyle(imageDataUrl: string): Promise<string> {
-    try {
       const file = this.dataURLToFile(imageDataUrl, 'image.jpg');
       const formData = new FormData();
       formData.append('image', file);
@@ -165,70 +164,7 @@ export class ApiService {
         reader.onload = () => resolve(reader.result as string);
         reader.readAsDataURL(blob);
       });
-    } catch (error) {
-      console.error('Failed to convert to Ghibli style:', error);
-      throw error;
-    }
   }
 
-  // Test backend connection - try the generate endpoint since root might not exist
-  async testConnection(): Promise<boolean> {
-    try {
-      // First try a simple GET to see if server responds
-      const response = await fetch(`${this.baseUrl}/generate`, {
-        method: 'GET',
-      });
-      
-      // Even if it returns 405 (Method Not Allowed), it means the server is responding
-      return response.status === 405 || response.ok;
-    } catch (error) {
-      console.error('Backend connection test failed:', error);
-      
-      // Try alternative endpoint or just check if server is reachable
-      try {
-        const healthResponse = await fetch(`${this.baseUrl}/health`, {
-          method: 'GET',
-        });
-        return healthResponse.ok;
-      } catch (healthError) {
-        return false;
-      }
-    }
-  }
 
-  // Get backend status and info
-  async getBackendStatus(): Promise<{ 
-    connected: boolean; 
-    version?: string; 
-    endpoints?: string[];
-    error?: string;
-  }> {
-    try {
-      // Try to get server info
-      const response = await fetch(`${this.baseUrl}/info`, {
-        method: 'GET',
-      });
-      
-      if (response.ok) {
-        const info = await response.json();
-        return {
-          connected: true,
-          ...info
-        };
-      }
-      
-      // If info endpoint doesn't exist, just test basic connectivity
-      const isConnected = await this.testConnection();
-      return {
-        connected: isConnected,
-        endpoints: isConnected ? ['/generate', '/print'] : []
-      };
-      
-    } catch (error) {
-      return {
-        connected: false,
-        error: error instanceof Error ? error.message : 'Connection failed'
-      };
-    }
-  }
 }

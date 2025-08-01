@@ -14,8 +14,7 @@ const DeliveryScreen: React.FC = () => {
     userInfo, 
     resetPhotos, 
     photoStripBlob,
-    setPhotoStripBlob,
-    backendConnected
+    setPhotoStripBlob
   } = usePhotoBooth();
   
   const [printing, setPrinting] = useState(false);
@@ -42,10 +41,10 @@ const DeliveryScreen: React.FC = () => {
 
   useEffect(() => {
     // Auto-start printing when strip is ready
-    if (photoStripBlob && backendConnected && !printing && !printComplete && !printError) {
+    if (photoStripBlob && !printing && !printComplete && !printError) {
       handlePrint();
     }
-  }, [photoStripBlob, backendConnected]);
+  }, [photoStripBlob]);
 
   useEffect(() => {
     // Start auto-redirect timer when print is complete or when returning from payment
@@ -87,23 +86,13 @@ const DeliveryScreen: React.FC = () => {
   
   const generatePhotoStrip = async () => {
     setGeneratingStrip(true);
-    try {
       const blob = await apiService.generatePhotoStrip(photos, "Good Times");
       setPhotoStripBlob(blob);
       console.log('Photo strip generated successfully');
-    } catch (error) {
-      console.error('Failed to generate photo strip:', error);
-      setPrintError('Failed to generate photo strip. Please try again.');
-    } finally {
       setGeneratingStrip(false);
-    }
   };
   
   const handlePrint = async () => {
-    if (!backendConnected) {
-      setPrintError('Backend server not connected. Please check server status.');
-      return;
-    }
 
     if (!photoStripBlob) {
       setPrintError('Photo strip not ready. Please wait for generation to complete.');
@@ -114,10 +103,9 @@ const DeliveryScreen: React.FC = () => {
     setPrintError('');
     setPrintStatus('Sending print job to backend...');
     
-    try {
       console.log(`Sending print request for 2 copies`);
       const result = await apiService.printPhotoStrip(2);
-      
+      await new Promise(resolve => setTimeout(resolve, 7000));
       if (result.error) {
         setPrintError(result.error);
         setPrintStatus('');
@@ -127,13 +115,7 @@ const DeliveryScreen: React.FC = () => {
         setHasReturnedFromPayment(true); // Trigger timer restart after print success
         console.log('Print job completed:', result);
       }
-    } catch (error) {
-      console.error('Print error:', error);
-      setPrintError('Print job failed. Please check if the backend server is running and printer is connected.');
-      setPrintStatus('');
-    } finally {
       setPrinting(false);
-    }
   };
   
   const handleStartOver = () => {
@@ -191,7 +173,7 @@ const DeliveryScreen: React.FC = () => {
 
   // Calculate reprint price - ₹100 per copy
   const getReprintPrice = () => {
-    return 100 * userInfo.copies; // ₹100 per copy for reprints
+    return 50 * userInfo.copies; // ₹100 per copy for reprints
   };
   return (
     <>
@@ -229,21 +211,6 @@ const DeliveryScreen: React.FC = () => {
             <p className="text-gray-300">
               Thank you for using our Photo Booth! 📸
             </p>
-          </div>
-          
-          {/* Backend Connection Status */}
-          <div className={`mb-4 p-3 rounded-lg border ${backendConnected ? 'bg-green-900/20 border-green-500/30' : 'bg-red-900/20 border-red-500/30'}`}>
-            <div className="flex items-center gap-2">
-              <Server className={backendConnected ? 'text-green-400' : 'text-red-400'} size={16} />
-              <span className={`font-medium ${backendConnected ? 'text-green-400' : 'text-red-400'}`}>
-                Backend Server: {backendConnected ? 'Connected' : 'Disconnected'}
-              </span>
-            </div>
-            {!backendConnected && (
-              <p className="text-sm text-gray-300 mt-1">
-                Make sure your FastAPI server is running on http://localhost:8000
-              </p>
-            )}
           </div>
           
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
@@ -470,7 +437,7 @@ const DeliveryScreen: React.FC = () => {
           </div>
           
           <div className="flex gap-4">
-            {!printComplete && backendConnected && (
+            {!printComplete && (
               <Button
                 variant="accent"
                 icon={Printer}

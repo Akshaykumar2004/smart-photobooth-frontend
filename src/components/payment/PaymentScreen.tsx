@@ -11,8 +11,7 @@ const PaymentScreen: React.FC = () => {
     setStage, 
     userInfo, 
     setUserInfo, 
-    setSessionPaid, 
-    backendConnected
+    setSessionPaid
   } = usePhotoBooth();
   
   const [selectedPackage, setSelectedPackage] = useState<'basic' | 'ghibli'>('basic');

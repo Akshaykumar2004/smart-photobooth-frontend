@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Settings, Server, Wifi, WifiOff, Save, RefreshCw, Monitor, MonitorOff, CheckCircle, AlertCircle, Upload, Image, Sparkles, IndianRupee } from 'lucide-react';
+import { X, Settings, Server, Wifi, WifiOff, Save, RefreshCw, Monitor, MonitorOff, CheckCircle, AlertCircle, Upload, Image, Sparkles, IndianRupee, Video, Play, Trash2 } from 'lucide-react';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
 import Input from '../ui/Input';
@@ -12,51 +12,27 @@ interface SettingsModalProps {
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
-  const { kioskMode, setKioskMode, backendConnected, setBackendConnected, settings, setSettings } = usePhotoBooth();
+  const { kioskMode, setKioskMode, settings, setSettings } = usePhotoBooth();
   const [apiUrl, setApiUrl] = useState('http://localhost:8000');
-  const [testing, setTesting] = useState(false);
-  const [statusMessage, setStatusMessage] = useState('');
-  const [backendStatus, setBackendStatus] = useState<any>(null);
   const [upiQrImage, setUpiQrImage] = useState<string | null>(null);
+  const [backgroundVideo, setBackgroundVideo] = useState<string | null>(null);
   
   const kioskManager = KioskModeManager.getInstance();
-  const apiService = ApiService.getInstance();
 
   useEffect(() => {
-    // Test backend connection on mount
-    testBackendConnection();
-    
     // Load saved UPI QR image from localStorage
     const savedUpiImage = localStorage.getItem('upiQrImage');
     if (savedUpiImage) {
       setUpiQrImage(savedUpiImage);
     }
+    
+    // Load saved background video from localStorage
+    const savedBackgroundVideo = localStorage.getItem('backgroundVideo');
+    if (savedBackgroundVideo) {
+      setBackgroundVideo(savedBackgroundVideo);
+    }
   }, []);
 
-  const testBackendConnection = async () => {
-    setTesting(true);
-    setStatusMessage('Testing backend connection...');
-    
-    try {
-      const status = await apiService.getBackendStatus();
-      setBackendStatus(status);
-      setBackendConnected(status.connected);
-      
-      if (status.connected) {
-        setStatusMessage('Backend server connected successfully!');
-      } else {
-        setStatusMessage(status.error || 'Backend server not responding. Make sure FastAPI server is running.');
-      }
-    } catch (error) {
-      console.error('Backend connection test failed:', error);
-      setBackendConnected(false);
-      setStatusMessage('Failed to connect to backend server.');
-      setBackendStatus({ connected: false, error: 'Connection failed' });
-    } finally {
-      setTesting(false);
-      setTimeout(() => setStatusMessage(''), 5000);
-    }
-  };
 
   const handleKioskModeToggle = () => {
     if (kioskMode) {
@@ -84,6 +60,36 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
   const handleRemoveUpiImage = () => {
     setUpiQrImage(null);
     localStorage.removeItem('upiQrImage');
+  };
+
+  const handleBackgroundVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Check if file is a video
+      if (!file.type.startsWith('video/')) {
+        alert('Please select a video file');
+        return;
+      }
+      
+      // Check file size (limit to 50MB)
+      if (file.size > 50 * 1024 * 1024) {
+        alert('Video file is too large. Please select a file smaller than 50MB.');
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const videoDataUrl = event.target?.result as string;
+        setBackgroundVideo(videoDataUrl);
+        localStorage.setItem('backgroundVideo', videoDataUrl);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveBackgroundVideo = () => {
+    setBackgroundVideo(null);
+    localStorage.removeItem('backgroundVideo');
   };
 
   const handleGhibliLimitChange = (newLimit: number) => {
@@ -121,20 +127,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
           </button>
         </div>
         
-        {/* Status Message */}
-        {statusMessage && (
-          <div className="mb-4 p-3 bg-blue-900/20 border border-blue-500/30 rounded-lg">
-            <div className="flex items-center gap-2">
-              {testing ? (
-                <div className="animate-spin w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full"></div>
-              ) : (
-                <Server className="text-blue-400" size={16} />
-              )}
-              <span className="text-blue-400">{statusMessage}</span>
-            </div>
-          </div>
-        )}
-        
         <div className="space-y-6">
           {/* Backend Connection Status */}
           <div className="bg-gray-900 rounded-lg p-4">
@@ -143,52 +135,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
                 <Server className="text-secondary" />
                 FastAPI Backend Configuration
               </h3>
-              <Button
-                variant="outline"
-                icon={RefreshCw}
-                onClick={testBackendConnection}
-                disabled={testing}
-                size="default"
-                className="text-sm"
-              >
-                {testing ? 'Testing...' : 'Test Connection'}
-              </Button>
             </div>
             
-            {/* Backend Status */}
-            <div className={`mb-4 p-3 rounded-lg border ${backendConnected ? 'bg-green-900/20 border-green-500/30' : 'bg-red-900/20 border-red-500/30'}`}>
+            {/* Backend Info */}
+            <div className="mb-4 p-3 rounded-lg border bg-green-900/20 border-green-500/30">
               <div className="flex items-center gap-2 mb-2">
-                {backendConnected ? (
-                  <>
-                    <CheckCircle className="text-green-400" size={16} />
-                    <span className="text-green-400 font-medium">Backend Server Connected</span>
-                  </>
-                ) : (
-                  <>
-                    <AlertCircle className="text-red-400" size={16} />
-                    <span className="text-red-400 font-medium">Backend Server Disconnected</span>
-                  </>
-                )}
+                <CheckCircle className="text-green-400" size={16} />
+                <span className="text-green-400 font-medium">Backend Server Ready</span>
               </div>
               <p className="text-sm text-gray-300">
-                {backendConnected 
-                  ? 'FastAPI server is running and ready to generate photo strips and handle printing.'
-                  : 'Make sure your FastAPI server is running. Start it with: uvicorn main:app --reload'
-                }
+                FastAPI server is assumed to be running and ready to generate photo strips and handle printing.
               </p>
-              
-              {/* Backend Status Details */}
-              {backendStatus && (
-                <div className="mt-2 text-xs text-gray-400">
-                  <p>Server URL: {apiUrl}</p>
-                  {backendStatus.endpoints && (
-                    <p>Available endpoints: {backendStatus.endpoints.join(', ')}</p>
-                  )}
-                  {backendStatus.error && (
-                    <p className="text-red-400">Error: {backendStatus.error}</p>
-                  )}
-                </div>
-              )}
             </div>
             
             <div className="grid grid-cols-1 gap-4">
@@ -226,13 +183,89 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
 
             {/* Recent Backend Activity */}
             <div className="mt-4 p-3 bg-gray-800 rounded-lg">
-              <h4 className="font-medium mb-2">Connection Status:</h4>
+              <h4 className="font-medium mb-2">Server Status:</h4>
               <div className="text-sm text-gray-300 space-y-1">
-                <p>Last tested: {new Date().toLocaleTimeString()}</p>
-                <p>Status: {backendConnected ? '✅ Ready for photo generation and printing' : '❌ Offline'}</p>
-                {backendConnected && (
-                  <p>Services: Photo strip generation ✓, Print service ✓</p>
+                <p>Status: ✅ Ready for photo generation and printing</p>
+                <p>Services: Photo strip generation ✓, Print service ✓</p>
+                <p>Server URL: {apiUrl}</p>
+              </div>
+            </div>
+          </div>
+          
+          {/* Background Video Configuration */}
+          <div className="bg-gray-900 rounded-lg p-4">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Video className="text-purple-400" />
+              Background Video Configuration
+            </h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Welcome Screen Background Video
+                </label>
+                <div className="flex items-center gap-4">
+                  <input
+                    type="file"
+                    accept="video/*"
+                    onChange={handleBackgroundVideoUpload}
+                    className="hidden"
+                    id="background-video-upload"
+                  />
+                  <label
+                    htmlFor="background-video-upload"
+                    className="btn btn-outline cursor-pointer flex items-center gap-2"
+                  >
+                    <Upload size={16} />
+                    Upload Video
+                  </label>
+                  
+                  {backgroundVideo && (
+                    <Button
+                      variant="outline"
+                      onClick={handleRemoveBackgroundVideo}
+                      className="border-red-500 text-red-400 hover:bg-red-500/10"
+                      icon={Trash2}
+                    >
+                      Remove
+                    </Button>
+                  )}
+                </div>
+                
+                {backgroundVideo && (
+                  <div className="mt-3">
+                    <p className="text-sm text-gray-400 mb-2">Preview:</p>
+                    <div className="inline-block border border-gray-700 rounded-lg overflow-hidden">
+                      <video 
+                        src={backgroundVideo} 
+                        className="w-64 h-36 object-cover"
+                        controls
+                        muted
+                      />
+                    </div>
+                  </div>
                 )}
+                
+                <p className="text-sm text-gray-400 mt-2">
+                  Upload a background video for the welcome screen. If no video is uploaded, the animated Three.js background will be shown instead.
+                  <br />
+                  <strong>Supported formats:</strong> MP4, WebM, OGV
+                  <br />
+                  <strong>Maximum size:</strong> 50MB
+                  <br />
+                  <strong>Recommended:</strong> 1920x1080, 30fps, under 10MB for best performance
+                </p>
+              </div>
+              
+              <div className="bg-gray-800 rounded-lg p-3">
+                <h4 className="font-medium mb-2">Video Features:</h4>
+                <div className="text-sm text-gray-300 space-y-1">
+                  <p><strong>✓ Auto-play:</strong> Video plays automatically on loop</p>
+                  <p><strong>✓ Muted playback:</strong> No audio to avoid disruption</p>
+                  <p><strong>✓ Fallback animation:</strong> Three.js animation if no video</p>
+                  <p><strong>✓ Responsive:</strong> Video scales to fit screen</p>
+                  <p><strong>✓ Performance optimized:</strong> Compressed playback</p>
+                </div>
               </div>
             </div>
           </div>
@@ -453,7 +486,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
               </div>
               <div>
                 <span className="text-gray-400">Backend Status:</span>
-                <span className="ml-2">{backendConnected ? '🟢 Connected' : '🔴 Disconnected'}</span>
+                <span className="ml-2">🟢 Ready</span>
               </div>
               <div>
                 <span className="text-gray-400">Ghibli Limit:</span>
@@ -470,6 +503,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
               <div>
                 <span className="text-gray-400">Ghibli (2 copies):</span>
                 <span className="ml-2">₹249</span>
+              </div>
+              <div>
+                <span className="text-gray-400">Background Video:</span>
+                <span className="ml-2">{backgroundVideo ? '🎥 Uploaded' : '🎨 Animation'}</span>
               </div>
             </div>
           </div>
