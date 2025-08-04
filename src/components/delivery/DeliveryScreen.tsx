@@ -240,6 +240,7 @@ const DeliveryScreen: React.FC = () => {
       clearInterval(autoRedirectTimer);
       setAutoRedirectTimer(null);
     }
+    
     // Reset all delivery-specific state
     setPrinting(false);
     setPrintComplete(false);
@@ -257,6 +258,9 @@ const DeliveryScreen: React.FC = () => {
     setRetryCount(0);
     setIsRetrying(false);
     setHasGeneratedStrip(false);
+    
+    // Clear photo strip blob
+    setPhotoStripBlob(null);
     
     resetPhotos();
     setStage('welcome');

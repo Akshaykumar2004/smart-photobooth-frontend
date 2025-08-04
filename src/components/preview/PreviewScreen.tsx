@@ -705,6 +705,7 @@ const PreviewScreen: React.FC = () => {
                           setGhibliError('');
                           setSelectedPhotoIndex(0);
                           setSettings(prev => ({ ...prev, ghibliConversionsUsed: 0 }));
+                          setAutoConvertedGhibli(false);
                         }}
                         className="w-full text-lg py-3"
                       >

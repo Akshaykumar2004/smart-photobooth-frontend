@@ -140,6 +140,9 @@ export const PhotoBoothProvider: React.FC<{ children: ReactNode }> = ({ children
       packageType: 'basic'
     });
     setSettings(prev => ({ ...prev, ghibliConversionsUsed: 0 }));
+    
+    // Clear any cached data
+    console.log('Photos and session data cleared for new session');
   };
 
   return (

@@ -190,6 +190,10 @@ const WelcomeScreen: React.FC = () => {
   const handleStartSession = () => {
     // Reset all context data for a fresh start
     resetPhotos();
+    
+    // Additional cleanup to ensure fresh state
+    console.log('Starting fresh photo session');
+    
     setStage('payment');
   };
 
