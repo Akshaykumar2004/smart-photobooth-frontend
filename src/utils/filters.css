@@ -1,0 +1,18 @@
+/* CSS filters for the preview screen */
+
+.normal {
+  filter: none;
+}
+
+.grayscale {
+  filter: grayscale(100%);
+}
+
+.sepia {
+  filter: sepia(80%);
+}
+
+.ghibli {
+  filter: brightness(105%) contrast(110%) saturate(140%) hue-rotate(2deg) sepia(20%);
+  /* Creates a softer, more pastel-like appearance typical of Ghibli films */
+}
