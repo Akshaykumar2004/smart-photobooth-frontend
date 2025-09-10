@@ -262,8 +262,7 @@ const WelcomeScreen: React.FC = () => {
             </div>
 
             {/* Features Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-              {/* Feature 1 */}
+            {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
               <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 text-center hover:bg-white/10 transition-all duration-300">
                 <div className="w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center mx-auto mb-6">
                   <Camera className="text-white" size={32} />
@@ -274,7 +273,6 @@ const WelcomeScreen: React.FC = () => {
                 </p>
               </div>
 
-              {/* Feature 2 */}
               <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 text-center hover:bg-white/10 transition-all duration-300">
                 <div className="w-16 h-16 bg-gradient-to-br from-accent to-secondary rounded-2xl flex items-center justify-center mx-auto mb-6">
                   <Star className="text-white" size={32} />
@@ -285,7 +283,6 @@ const WelcomeScreen: React.FC = () => {
                 </p>
               </div>
 
-              {/* Feature 3 */}
               <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 text-center hover:bg-white/10 transition-all duration-300">
                 <div className="w-16 h-16 bg-gradient-to-br from-secondary to-primary rounded-2xl flex items-center justify-center mx-auto mb-6">
                   <Award className="text-white" size={32} />
@@ -295,7 +292,7 @@ const WelcomeScreen: React.FC = () => {
                   Professional 4×6 inch photo strips printed instantly with premium quality paper
                 </p>
               </div>
-            </div>
+            </div> */}
 
             {/* Live Preview Section */}
             <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8 mb-12">

@@ -7,7 +7,7 @@ import ProgressBar from '../ui/ProgressBar';
 import PhotoEditor from './PhotoEditor';
 import FilterSelector from './FilterSelector';
 import { ApiService } from '../../utils/apiService';
-import MockPaymentUI from '../payment/MockPaymentUI';
+import RazorpayPaymentUI from '../payment/MockPaymentUI';
 
 const PreviewScreen: React.FC = () => {
   const { 
@@ -358,7 +358,7 @@ const PreviewScreen: React.FC = () => {
                   <p>📸 <strong>All your original photos included</strong></p>
                 </div>
               </div>
-              <MockPaymentUI 
+              <RazorpayPaymentUI 
                 onPaymentComplete={handleGhibliUpgradePayment}
                 amount={getUpgradePrice()}
                 includesPrint={false}
@@ -813,39 +813,7 @@ const PreviewScreen: React.FC = () => {
         </div>
       )}
       
-      {/* Inactivity Warning */}
-      {/* {showInactivityWarning && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 animate-fade-in">
-          <div className="bg-gray-800 rounded-xl p-8 max-w-md mx-4 text-center border-2 border-yellow-400/50">
-            <div className="text-6xl mb-4 animate-bounce">⏰</div>
-            <h2 className="text-2xl font-bold text-yellow-400 mb-4">Still there?</h2>
-            <p className="text-gray-300 mb-6">
-              Auto-continuing to delivery in <span className="font-bold text-yellow-400">{inactivityCountdown}</span> seconds
-            </p>
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowInactivityWarning(false);
-                  if (inactivityTimer) {
-                    clearTimeout(inactivityTimer);
-                  }
-                }}
-                className="flex-1"
-              >
-                Keep Editing
-              </Button>
-              <Button
-                variant="primary"
-                onClick={handleNext}
-                className="flex-1"
-              >
-                Continue Now
-              </Button>
-            </div>
-          </div>
-        </div>
-      )} */}
+     
     </>
   );
 };
