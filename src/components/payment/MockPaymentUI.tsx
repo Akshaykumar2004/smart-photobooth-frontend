@@ -337,7 +337,7 @@ const RazorpayPaymentUI: React.FC<RazorpayPaymentUIProps> = ({
         </Button>
 
         {/* Mock payment for testing */}
-        {process.env.NODE_ENV === 'development' && (
+        {/* {process.env.NODE_ENV === 'development' && (
           <Button
             variant="outline"
             size="sm"
@@ -346,7 +346,7 @@ const RazorpayPaymentUI: React.FC<RazorpayPaymentUIProps> = ({
           >
             Skip Payment (Testing)
           </Button>
-        )}
+        )} */}
         
         {onCancel && (
           <Button
