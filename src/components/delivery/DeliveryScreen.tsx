@@ -201,7 +201,7 @@ const DeliveryScreen: React.FC = () => {
     }, 60000);
 
     try {
-      const result = await apiService.printPhotoStrip(2);
+      const result = await apiService.printPhotoStrip(1);
       
       if (printTimeoutRef.current) {
         clearTimeout(printTimeoutRef.current);
@@ -493,7 +493,7 @@ const DeliveryScreen: React.FC = () => {
                       PRINT COMPLETE!
                     </div>
                     <div className="text-lg text-gray-300 mb-4">
-                      Collect your 2 photo strips
+                      Collect your photo strip
                     </div>
                     {!timerPaused && (
                       <div className="text-blue-400">

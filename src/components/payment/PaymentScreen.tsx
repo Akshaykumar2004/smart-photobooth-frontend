@@ -185,7 +185,7 @@ const PaymentScreen: React.FC = () => {
   } = usePhotoBooth();
   
   const [selectedPackage, setSelectedPackage] = useState<'basic' | 'ghibli'>('basic');
-  const [copies, setCopies] = useState(2);
+  const copies = 1; // Fixed to 1 copy
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<string>('');
 
@@ -303,9 +303,9 @@ const PaymentScreen: React.FC = () => {
   
   const steps = ['Welcome', 'Payment', 'Capture', 'Preview', 'Delivery'];
   
-  // Simple pricing
-  const basicPrice = copies === 2 ? 199 : 299;
-  const ghibliPrice = copies === 2 ? 249 : 349;
+  // Simple pricing - single copy only
+  const basicPrice = 199;
+  const ghibliPrice = 249;
   const totalPrice = selectedPackage === 'basic' ? basicPrice : ghibliPrice;
   
   return (
@@ -359,28 +359,6 @@ const PaymentScreen: React.FC = () => {
               </div>
             </div>
             
-            {/* Copies Selection */}
-            <div className="text-center mb-8">
-              <h3 className="text-2xl font-bold mb-6">Choose Copies</h3>
-              <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
-                <Button
-                  variant={copies === 2 ? 'primary' : 'outline'}
-                  onClick={() => setCopies(2)}
-                  className="text-xl py-6"
-                  size="lg"
-                >
-                  2 Copies
-                </Button>
-                <Button
-                  variant={copies === 4 ? 'primary' : 'outline'}
-                  onClick={() => setCopies(4)}
-                  className="text-xl py-6"
-                  size="lg"
-                >
-                  4 Copies
-                </Button>
-              </div>
-            </div>
             
             {/* Payment Status */}
             {paymentStatus && (

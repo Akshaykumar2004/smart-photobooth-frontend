@@ -26,8 +26,8 @@ const PreviewScreen: React.FC = () => {
   } = usePhotoBooth();
   
   const [allPhotos, setAllPhotos] = useState([...photos]);
-  const [showEditor, setShowEditor] = useState(false);
-  const [editingIndex, setEditingIndex] = useState(0);
+  const [retakesUsed, setRetakesUsed] = useState(0);
+  const maxRetakes = 1;
   const [convertingGhibli, setConvertingGhibli] = useState(false);
   const [ghibliPhotos, setGhibliPhotos] = useState<Set<number>>(new Set());
   const [originalPhotos, setOriginalPhotos] = useState<Map<number, string>>(new Map());
@@ -183,19 +183,15 @@ const PreviewScreen: React.FC = () => {
     setSelectedPhotoIndex(index);
   };
   
-  const handleEditPhoto = (index: number) => {
-    setEditingIndex(index);
-    setShowEditor(true);
-  };
-  
-  const handleSaveEdit = (editedDataUrl: string) => {
-    const newPhotos = [...allPhotos];
-    newPhotos[editingIndex] = {
-      ...newPhotos[editingIndex],
-      dataUrl: editedDataUrl
-    };
-    setAllPhotos(newPhotos);
-    setShowEditor(false);
+  const handleRetakePhoto = () => {
+    if (retakesUsed >= maxRetakes) {
+      setGhibliError(`You can only retake ${maxRetakes} photo per session.`);
+      return;
+    }
+
+    // Go back to capture screen
+    setRetakesUsed(retakesUsed + 1);
+    setStage('capture');
   };
   
   const handleFilterChange = (filter: string) => {
@@ -403,41 +399,9 @@ const PreviewScreen: React.FC = () => {
             
             {/* Main Layout: 70% Left, 30% Right */}
             <div className="flex gap-6">
-              {/* Left Side - 70% - Edit Your Photos */}
+              {/* Left Side - 70% - Photo Order and Final Strips */}
               <div className="flex-1" style={{ flex: '0 0 70%' }}>
                 <Card animate className="h-full">
-                  <h2 className="text-5xl font-bold mb-8 text-center">📸 EDIT PHOTOS</h2>
-                  
-                  {/* Main photo preview */}
-                  <div className="relative aspect-[4/3] bg-black rounded-lg overflow-hidden mb-6">
-                    <img 
-                      src={allPhotos[selectedPhotoIndex]?.dataUrl} 
-                      alt="Preview" 
-                      className={`w-full h-full object-cover ${allPhotos[selectedPhotoIndex]?.filter || 'normal'}`}
-                    />
-                    
-                    {/* Ghibli conversion indicator */}
-                    {ghibliPhotos.has(selectedPhotoIndex) && allPhotos[selectedPhotoIndex]?.filter === 'ghibli' && (
-                      <div className="absolute top-4 left-4 bg-purple-500/90 px-6 py-3 rounded-full">
-                        <span className="text-white text-2xl font-bold flex items-center gap-2">
-                          <Sparkles size={14} />
-                          ✨ GHIBLI
-                        </span>
-                      </div>
-                    )}
-                    
-                    {/* Edit button overlay */}
-                    <div className="absolute bottom-4 right-4">
-                      <Button
-                        variant="accent"
-                        icon={Edit}
-                        onClick={() => handleEditPhoto(selectedPhotoIndex)}
-                        className="bg-black/70 hover:bg-black/90 text-xl px-6 py-3"
-                      >
-                        ✏️ EDIT
-                      </Button>
-                    </div>
-                  </div>
                   
                   {/* Photo Order - Horizontal Line */}
                   <div className="mb-6">
@@ -504,31 +468,19 @@ const PreviewScreen: React.FC = () => {
                             </div>
                           )}
                           
-                          {/* Remove button */}
-                          <div className="absolute top-2 right-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRemovePhoto(index);
-                              }}
-                              className="bg-red-600/90 text-white p-1 rounded hover:bg-red-700/90"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
                         </div>
                       ))}
                     </div>
                   </div>
                   
                   {/* Strip Preview */}
-                  <div className="bg-gray-900 rounded-lg p-4">
-                    <h3 className="text-3xl font-bold mb-6 text-center">🖨️ FINAL STRIPS</h3>
+                  <div className="bg-gray-900 rounded-lg p-4 mt-6">
+                    <h3 className="text-3xl font-bold mb-6 text-center">🖨️ FINAL STRIP</h3>
                     <div className="flex flex-col gap-1 max-w-[200px] mx-auto bg-white p-2 rounded">
                       {allPhotos.map((photo, index) => (
                         <div key={index} className="aspect-[4/3] w-full">
-                          <img 
-                            src={photo.dataUrl} 
+                          <img
+                            src={photo.dataUrl}
                             alt={`Strip ${index + 1}`}
                             className={`w-full h-full object-cover ${photo.filter || 'normal'}`}
                           />
@@ -542,7 +494,7 @@ const PreviewScreen: React.FC = () => {
                       ))}
                     </div>
                     <p className="text-center text-2xl font-bold text-primary mt-4">
-                      📄 2 STRIPS • 4×6 INCH
+                      📄 1 STRIP • 4×6 INCH
                     </p>
                   </div>
                 </Card>
@@ -561,21 +513,15 @@ const PreviewScreen: React.FC = () => {
                       {[
                         { name: 'normal', label: '📸 ORIGINAL', preview: 'filter: none' },
                         { name: 'grayscale', label: '⚫ BLACK & WHITE', preview: 'filter: grayscale(100%)' },
-                        { name: 'sepia', label: '🟤 VINTAGE', preview: 'filter: sepia(80%)' },
-                        { name: 'ghibli', label: '✨ GHIBLI', preview: 'filter: brightness(105%) contrast(110%) saturate(140%)' }
+                        { name: 'sepia', label: '🟤 VINTAGE', preview: 'filter: sepia(80%)' }
                       ].map((filter) => (
                         <button
                           key={filter.name}
                           onClick={() => handleFilterChange(filter.name)}
-                          disabled={filter.name === 'ghibli' && !ghibliPhotos.has(selectedPhotoIndex)}
-                          className={`w-full p-4 rounded-lg border-2 transition-all text-center ${
-                            (allPhotos[selectedPhotoIndex]?.filter || 'normal') === filter.name 
-                              ? 'border-primary bg-primary/20' 
+                          className={`w-full p-4 rounded-lg border-2 transition-all text-center cursor-pointer ${
+                            (allPhotos[selectedPhotoIndex]?.filter || 'normal') === filter.name
+                              ? 'border-primary bg-primary/20'
                               : 'border-gray-700 hover:border-gray-500 bg-gray-800/50'
-                          } ${
-                            filter.name === 'ghibli' && !ghibliPhotos.has(selectedPhotoIndex) 
-                              ? 'opacity-50 cursor-not-allowed' 
-                              : 'cursor-pointer'
                           }`}
                         >
                           <div className="flex flex-col items-center gap-3">
@@ -589,9 +535,6 @@ const PreviewScreen: React.FC = () => {
                             </div>
                             <div>
                               <div className="font-bold text-white text-lg">{filter.label}</div>
-                              {filter.name === 'ghibli' && !ghibliPhotos.has(selectedPhotoIndex) && (
-                                <div className="text-sm text-gray-400 font-medium">CONVERT TO UNLOCK</div>
-                              )}
                             </div>
                           </div>
                         </button>
@@ -643,25 +586,6 @@ const PreviewScreen: React.FC = () => {
                   </Card>
                   )}
                   
-                  {userInfo.packageType !== 'ghibli' && (
-                    <Card animate className="flex-1">
-                      <h3 className="text-2xl font-bold mb-4 flex items-center gap-2 text-center">
-                        <Sparkles className="text-purple-400" />
-                        ✨ GHIBLI AI
-                      </h3>
-                      <div className="text-center bg-gradient-to-r from-purple-900/30 to-pink-900/30 rounded-lg p-6 border border-purple-400/50">
-                        <p className="text-purple-300 mb-4 text-xl font-bold">🎨 UNLOCK GHIBLI!</p>
-                        <Button
-                          variant="accent"
-                          icon={Sparkles}
-                          onClick={() => setShowGhibliUpgradePayment(true)}
-                          className="w-full btn-ultra-neon text-xl py-4"
-                        >
-                          ✨ UPGRADE +₹50
-                        </Button>
-                      </div>
-                    </Card>
-                  )}
                   
                   {userInfo.packageType === 'ghibli' && autoConvertedGhibli && (
                     <Card animate className="flex-1">
@@ -687,13 +611,18 @@ const PreviewScreen: React.FC = () => {
                     <div className="space-y-2">
                       <Button
                         variant="outline"
-                        icon={Edit}
-                        onClick={() => handleEditPhoto(selectedPhotoIndex)}
+                        icon={RefreshCcw}
+                        onClick={handleRetakePhoto}
+                        disabled={retakesUsed >= maxRetakes}
                         className="w-full text-lg py-3"
                       >
-                        ✏️ EDIT PHOTO
+                        📸 RETAKE 1 PHOTO ({maxRetakes - retakesUsed} left)
                       </Button>
-                      
+
+                      <div className="text-center text-sm text-gray-400 mt-2">
+                        You can retake one photo if you don't like it
+                      </div>
+
                       <Button
                         variant="outline"
                         icon={RefreshCcw}
@@ -706,6 +635,7 @@ const PreviewScreen: React.FC = () => {
                           setSelectedPhotoIndex(0);
                           setSettings(prev => ({ ...prev, ghibliConversionsUsed: 0 }));
                           setAutoConvertedGhibli(false);
+                          setRetakesUsed(0);
                         }}
                         className="w-full text-lg py-3"
                       >
@@ -802,14 +732,6 @@ const PreviewScreen: React.FC = () => {
             </div>
           )}
           
-          {/* Photo Editor Modal */}
-          {showEditor && (
-            <PhotoEditor
-              imageDataUrl={allPhotos[editingIndex].dataUrl}
-              onSave={handleSaveEdit}
-              onCancel={() => setShowEditor(false)}
-            />
-          )}
         </div>
       )}
       
