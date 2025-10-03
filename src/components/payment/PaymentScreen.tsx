@@ -421,7 +421,7 @@ const PaymentScreen: React.FC = () => {
                 </Button>
                 
                 {/* Optional: Skip payment for testing */}
-                {/* {process.env.NODE_ENV === 'development' && (
+                {process.env.NODE_ENV === 'development' && (
                   <Button 
                     variant="outline" 
                     size="sm"
@@ -430,7 +430,7 @@ const PaymentScreen: React.FC = () => {
                   >
                     Skip Payment (Testing)
                   </Button>
-                )} */}
+                )}
               </div>
             </div>
           </Card>

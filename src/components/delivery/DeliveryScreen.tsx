@@ -372,7 +372,7 @@ const DeliveryScreen: React.FC = () => {
   };
 
   const getReprintPrice = () => {
-    return 100;
+    return 200;
   };
 
   return (

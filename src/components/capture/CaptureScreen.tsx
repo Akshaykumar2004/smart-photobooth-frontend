@@ -220,17 +220,15 @@ const CaptureScreen: React.FC = () => {
             />
           )}
           
-          <div className="relative bg-black rounded-lg overflow-hidden" style={{ minHeight: '400px' }}>
+          <div className="relative aspect-[4/3] bg-black rounded-lg overflow-hidden">
             <Webcam
               audio={false}
               ref={webcamRef}
               screenshotFormat="image/jpeg"
-              width={1920}
-              height={1080}
+              width="100%"
+              height="100%"
               videoConstraints={{
-                facingMode: "user",
-                width: { ideal: 1920, min: 640 },
-                height: { ideal: 1080, min: 480 }
+                facingMode: "user"
               }}
               onUserMedia={() => setWebcamReady(true)}
               className={`${webcamReady ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300 w-full h-auto max-w-full transform scale-x-[-1]`}
