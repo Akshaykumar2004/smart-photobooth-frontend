@@ -28,6 +28,8 @@ const PreviewScreen: React.FC = () => {
   const [allPhotos, setAllPhotos] = useState([...photos]);
   const [retakesUsed, setRetakesUsed] = useState(0);
   const maxRetakes = 1;
+  const [showRetakeModal, setShowRetakeModal] = useState(false);
+  const [photoToRetake, setPhotoToRetake] = useState<number | null>(null);
   const [convertingGhibli, setConvertingGhibli] = useState(false);
   const [ghibliPhotos, setGhibliPhotos] = useState<Set<number>>(new Set());
   const [originalPhotos, setOriginalPhotos] = useState<Map<number, string>>(new Map());
@@ -189,9 +191,34 @@ const PreviewScreen: React.FC = () => {
       return;
     }
 
-    // Go back to capture screen
+    // Show modal to select which photo to retake
+    setShowRetakeModal(true);
+  };
+
+  const handleConfirmRetake = () => {
+    if (photoToRetake === null) {
+      setGhibliError('Please select a photo to retake.');
+      return;
+    }
+
+    // Remove the selected photo
+    const newPhotos = allPhotos.filter((_, index) => index !== photoToRetake);
+    setAllPhotos(newPhotos);
+    updateAllPhotos(newPhotos);
+
+    // Update retakes count
     setRetakesUsed(retakesUsed + 1);
+    setShowRetakeModal(false);
+    setPhotoToRetake(null);
+
+    // Go back to capture screen
     setStage('capture');
+  };
+
+  const handleCancelRetake = () => {
+    setShowRetakeModal(false);
+    setPhotoToRetake(null);
+    setGhibliError('');
   };
   
   const handleFilterChange = (filter: string) => {
@@ -734,8 +761,79 @@ const PreviewScreen: React.FC = () => {
           
         </div>
       )}
-      
-     
+
+      {/* Retake Photo Modal */}
+      {showRetakeModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 animate-fade-in p-4">
+          <Card animate className="w-full max-w-3xl">
+            <h2 className="text-3xl font-bold mb-6 text-center">📸 Select Photo to Retake</h2>
+            <p className="text-center text-gray-300 mb-6 text-lg">
+              Choose which photo you want to retake. The selected photo will be removed and you'll capture a new one.
+            </p>
+
+            {/* Photo Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              {allPhotos.map((photo, index) => (
+                <div
+                  key={index}
+                  onClick={() => setPhotoToRetake(index)}
+                  className={`relative cursor-pointer rounded-lg overflow-hidden border-4 transition-all ${
+                    photoToRetake === index
+                      ? 'border-primary shadow-lg shadow-primary/50 scale-105'
+                      : 'border-gray-600 hover:border-gray-500'
+                  }`}
+                >
+                  <img
+                    src={photo.dataUrl}
+                    alt={`Photo ${index + 1}`}
+                    className={`w-full aspect-square object-cover ${photo.filter || 'normal'}`}
+                  />
+                  <div className="absolute top-2 left-2 bg-black/80 text-white text-lg font-bold px-3 py-1 rounded">
+                    #{index + 1}
+                  </div>
+                  {photoToRetake === index && (
+                    <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                      <div className="text-6xl">✓</div>
+                    </div>
+                  )}
+                  {photo.filter === 'ghibli' && (
+                    <div className="absolute top-2 right-2 bg-purple-500/80 text-white text-xs px-2 py-1 rounded">
+                      ✨
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {ghibliError && (
+              <div className="p-3 bg-red-900/20 border border-red-500/30 rounded text-red-400 text-center mb-4">
+                {ghibliError}
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex gap-4">
+              <Button
+                variant="outline"
+                onClick={handleCancelRetake}
+                className="flex-1 text-lg py-3"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleConfirmRetake}
+                disabled={photoToRetake === null}
+                className="flex-1 text-lg py-3 btn-ultra-neon"
+              >
+                Retake Selected Photo
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+
     </>
   );
 };

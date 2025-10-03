@@ -221,9 +221,9 @@ const PaymentScreen: React.FC = () => {
         return;
       }
 
-      // Calculate total
-      const basicPrice = copies === 2 ? 199 : 299;
-      const ghibliPrice = copies === 2 ? 249 : 349;
+      // Calculate total - single copy pricing
+      const basicPrice = 199;
+      const ghibliPrice = 249;
       const totalPrice = selectedPackage === 'basic' ? basicPrice : ghibliPrice;
 
       // Razorpay payment options
@@ -232,7 +232,7 @@ const PaymentScreen: React.FC = () => {
         amount: totalPrice * 100, // Amount in paise
         currency: 'INR',
         name: 'Photo Booth Studio',
-        description: `${selectedPackage === 'basic' ? 'Normal' : 'Normal + Ghibli'} Package - ${copies} Copies`,
+        description: `${selectedPackage === 'basic' ? 'Normal' : 'Normal + Ghibli'} Package - 1 Copy`,
         image: '', // Add your logo URL here
         handler: function (response: RazorpayResponse) {
           // Payment successful
