@@ -134,7 +134,7 @@
 // export default PaymentScreen;
 
 import React, { useState } from 'react';
-import { ArrowLeft, IndianRupee, CreditCard, Printer, Server, Sparkles, ImageIcon } from 'lucide-react';
+import { ArrowLeft, IndianRupee, CreditCard, Printer, Server, Sparkles, Image as ImageIcon } from 'lucide-react';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
 import { usePhotoBooth } from '../../contexts/PhotoBoothContext';

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, ArrowRight, RefreshCcw, Sparkles, Loader, Edit, Palette, AlertCircle, GripVertical, RotateCcw, Trash2, Plus } from 'lucide-react';
+import { ArrowLeft, ArrowRight, RefreshCcw, Sparkles, Loader, CreditCard as Edit, Palette, AlertCircle, GripVertical, RotateCcw, Trash2, Plus } from 'lucide-react';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
 import { usePhotoBooth } from '../../contexts/PhotoBoothContext';
